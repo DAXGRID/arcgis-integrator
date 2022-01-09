@@ -11,18 +11,19 @@ namespace KonstantDataValidator;
 public class Listen : IListen
 {
     private readonly string _connectionString;
-    private int _pollingIntervalMs;
+    private readonly int _pollingIntervalMs;
+    private readonly string _versionTableName;
 
     public Listen(string connectionString)
     {
         _connectionString = connectionString;
         _pollingIntervalMs = 1000;
+        _versionTableName = "sde_SDE_versions";
     }
 
-    public Channel<ChangeRow<dynamic>> Start(CancellationToken token = default)
+    public ChannelReader<long> Start(CancellationToken token = default)
     {
-        var changeDataCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
-        var versionsTable = "sde_SDE_versions";
+        var versionsCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
 
         _ = Task.Factory.StartNew(async () =>
         {
@@ -31,10 +32,11 @@ public class Listen : IListen
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
+
                     if (lowBoundLsn == -1)
                         lowBoundLsn = await GetStartLsn();
 
-                    token.ThrowIfCancellationRequested();
                     using var connection = new SqlConnection(_connectionString);
                     await connection.OpenAsync();
 
@@ -43,18 +45,20 @@ public class Listen : IListen
                     if (lowBoundLsn <= highBoundLsn)
                     {
                         var changes = await Cdc.GetAllChanges(
-                            connection, versionsTable, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All);
+                            connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All);
 
-                        changes.OrderBy(x => x.SequenceValue)
+                        changes
+                            .OrderBy(x => x.SequenceValue)
                             .ToList()
-                            .ForEach(async (x) => await changeDataCh.Writer.WriteAsync(x, token));
+                            .ForEach(async (x) => await versionsCh.Writer.WriteAsync(x));
 
                         lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    changeDataCh.Writer.Complete();
+                    versionsCh.Writer.Complete();
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -65,9 +69,20 @@ public class Listen : IListen
                     await Task.Delay(_pollingIntervalMs);
                 }
             }
-        }, token);
+        });
 
-        return changeDataCh;
+        var stateIdUpdatedCh = Channel.CreateUnbounded<long>();
+        _ = Task.Factory.StartNew(async () =>
+        {
+            await foreach (var versionUpdate in versionsCh.Reader.ReadAllAsync())
+            {
+                await stateIdUpdatedCh.Writer.WriteAsync(versionUpdate.Body.state_id);
+            }
+
+            stateIdUpdatedCh.Writer.Complete();
+        });
+
+        return stateIdUpdatedCh.Reader;
     }
 
     private async Task<long> GetStartLsn()

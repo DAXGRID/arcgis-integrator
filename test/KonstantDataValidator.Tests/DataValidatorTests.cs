@@ -21,14 +21,14 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Receive_notification_when_versions_table_row_is_updated()
+    public async Task Receive_state_id_when_versions_table_row_is_updated()
     {
         var iterations = 10;
         var cTokenSource = new CancellationTokenSource();
 
         var sut = new Listen(_databaseFixture.ConnectionString);
 
-        var versionUpdateCh = sut.Start(cTokenSource.Token);
+        var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 
         var rand = new Random();
         var randNumbers = Enumerable.Range(0, iterations)
@@ -43,10 +43,10 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
             }
         });
 
-        var changes = new ChangeRow<dynamic>[iterations];
+        var changes = new long[iterations];
         for (var i = 0; i < iterations; i++)
         {
-            var change = await versionUpdateCh.Reader.ReadAsync();
+            var change = await stateIdUpdatedCh.ReadAsync();
             changes[i] = change;
         }
 
@@ -55,7 +55,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         using (new AssertionScope())
         {
             changes.Length.Should().Be(iterations);
-            changes.Select(x => x.Body.state_id).Should().BeEquivalentTo(randNumbers);
+            changes.Should().BeEquivalentTo(randNumbers);
         }
     }
 
