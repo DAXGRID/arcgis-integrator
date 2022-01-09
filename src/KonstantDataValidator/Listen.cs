@@ -3,25 +3,79 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 
 namespace KonstantDataValidator;
+
+public record ChangeSet(SqlRow? Add, SqlRow? Delete);
+
+public record SqlRow
+{
+    public string TableName { get; init; }
+    public IReadOnlyCollection<(string fieldName, object fieldValue)> Fields;
+    public long ObjectId => (long)Fields.FirstOrDefault(x => x.fieldName == "OBJECTID").fieldValue;
+    public long StateId => (long)Fields.FirstOrDefault(x => x.fieldName == "SDE_STATE_ID").fieldValue;
+
+    public SqlRow(string tableName, IReadOnlyCollection<(string fieldName, object fieldValue)> fields)
+    {
+        TableName = tableName;
+        Fields = fields;
+    }
+}
+
+public record TableWatch
+{
+    public string Table { get; init; }
+    public string DeleteTable { get; init; }
+    public string AddTable { get; init; }
+
+    public TableWatch(string table, string deleteTable, string addTable)
+    {
+        Table = table;
+        DeleteTable = deleteTable;
+        AddTable = addTable;
+    }
+}
+
+public enum Operation
+{
+    Create,
+    Update,
+    Delete
+}
+
+public record UpdateRow
+{
+    public string TableName { get; init; }
+    public IReadOnlyDictionary<string, object> Fields { get; init; }
+    public Operation Operation { get; init; }
+
+    public UpdateRow(string tableName, IReadOnlyDictionary<string, object> columns, Operation operation)
+    {
+        TableName = tableName;
+        Fields = columns;
+        Operation = operation;
+    }
+}
 
 public class Listen : IListen
 {
     private readonly string _connectionString;
     private readonly int _pollingIntervalMs;
     private readonly string _versionTableName;
+    private readonly IReadOnlyCollection<TableWatch> _tables;
 
-    public Listen(string connectionString)
+    public Listen(IReadOnlyCollection<TableWatch> tables, string connectionString)
     {
         _connectionString = connectionString;
-        _pollingIntervalMs = 1000;
-        _versionTableName = "sde_SDE_versions";
+        _pollingIntervalMs = 1000; // TODO get from constructor
+        _versionTableName = "sde_SDE_versions"; // TODO get from constructor
+        _tables = tables;
     }
 
-    public ChannelReader<long> Start(CancellationToken token = default)
+    public ChannelReader<IReadOnlyCollection<UpdateRow>> Start(CancellationToken token = default)
     {
         var versionsCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
 
@@ -42,12 +96,11 @@ public class Listen : IListen
 
                     var highBoundLsn = await Cdc.GetMaxLsn(connection);
 
+                    // If the highbound lsn has changed there might be a change to the table.
                     if (lowBoundLsn <= highBoundLsn)
                     {
-                        var changes = await Cdc.GetAllChanges(
-                            connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All);
-
-                        changes
+                        (await Cdc.GetAllChanges(
+                            connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All))
                             .OrderBy(x => x.SequenceValue)
                             .ToList()
                             .ForEach(async (x) => await versionsCh.Writer.WriteAsync(x));
@@ -62,7 +115,7 @@ public class Listen : IListen
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.Message); // TODO use logging
                 }
                 finally
                 {
@@ -71,18 +124,77 @@ public class Listen : IListen
             }
         });
 
-        var stateIdUpdatedCh = Channel.CreateUnbounded<long>();
+        var updateRowCh = Channel.CreateUnbounded<IReadOnlyCollection<UpdateRow>>();
         _ = Task.Factory.StartNew(async () =>
         {
             await foreach (var versionUpdate in versionsCh.Reader.ReadAllAsync())
             {
-                await stateIdUpdatedCh.Writer.WriteAsync(versionUpdate.Body.state_id);
+                try
+                {
+                    long stateId = versionUpdate.Body.state_id;
+
+                    foreach (var table in _tables)
+                    {
+                        var addedTask = RetrieveRowUpdate(table.AddTable, stateId);
+                        var deletedTask = RetrieveRowUpdate(table.DeleteTable, stateId);
+
+                        var changeSets = (await Task.WhenAll(addedTask, deletedTask))
+                            .SelectMany(x => x)
+                            .GroupBy(x => x.ObjectId)
+                            .Select(x => new ChangeSet(
+                                        x.FirstOrDefault(y => y.TableName == table.AddTable),
+                                        x.FirstOrDefault(y => y.TableName == table.DeleteTable)));
+
+                        // Here Map to UpdateRows
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace); // TODO use logging
+                }
             }
 
-            stateIdUpdatedCh.Writer.Complete();
+            updateRowCh.Writer.Complete();
         });
 
-        return stateIdUpdatedCh.Reader;
+        return updateRowCh.Reader;
+    }
+
+    public static UpdateRow MapUpdateRow(
+        string tableName,
+        IReadOnlyCollection<(string fieldName, object fieldValue)> rowColumnFields,
+        Operation operation)
+    {
+        return new UpdateRow(
+            tableName,
+            rowColumnFields.ToDictionary(x => x.fieldName, x => x.fieldValue),
+            operation);
+    }
+
+    private async Task<List<SqlRow>> RetrieveRowUpdate(string tableName, long stateId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var sql = $@"SELECT OBJECTID, SDE_STATE_ID FROM {tableName}
+                    WHERE SDE_STATE_ID = @state_id";
+        using var cmd = new SqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@state_id", stateId);
+
+        var sqlRowList = new List<SqlRow>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var column = new List<(string fieldName, object fieldValue)>();
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                column.Add((reader.GetName(i), reader.GetValue(i)));
+            }
+
+            sqlRowList.Add(new SqlRow(tableName, column));
+        }
+
+        return sqlRowList;
     }
 
     private async Task<long> GetStartLsn()
