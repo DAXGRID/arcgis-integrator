@@ -48,7 +48,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
             }
         });
 
-        var changes = new List<IReadOnlyCollection<UpdateRow>>();
+        var changes = new List<IReadOnlyCollection<ChangeEvent>>();
         for (var i = 0; i < insertCount; i++)
         {
             var change = await stateIdUpdatedCh.ReadAsync();

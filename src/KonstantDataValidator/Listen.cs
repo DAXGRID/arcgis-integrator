@@ -9,7 +9,19 @@ using MsSqlCdc;
 
 namespace KonstantDataValidator;
 
-public record ChangeSet(SqlRow? Add, SqlRow? Delete);
+public record ChangeSet
+{
+    public SqlRow? Add { get; init; }
+    public SqlRow? Delete { get; init; }
+    public string TableName =>
+        Add?.TableName ?? Delete?.TableName ?? throw new Exception("Could not find table name.");
+
+    public ChangeSet(SqlRow? add = null, SqlRow? delete = null)
+    {
+        Add = add;
+        Delete = delete;
+    }
+}
 
 public record SqlRow
 {
@@ -46,13 +58,13 @@ public enum Operation
     Delete
 }
 
-public record UpdateRow
+public record ChangeEvent
 {
     public string TableName { get; init; }
     public IReadOnlyDictionary<string, object> Fields { get; init; }
     public Operation Operation { get; init; }
 
-    public UpdateRow(string tableName, IReadOnlyDictionary<string, object> columns, Operation operation)
+    public ChangeEvent(string tableName, IReadOnlyDictionary<string, object> columns, Operation operation)
     {
         TableName = tableName;
         Fields = columns;
@@ -75,7 +87,7 @@ public class Listen : IListen
         _tables = tables;
     }
 
-    public ChannelReader<IReadOnlyCollection<UpdateRow>> Start(CancellationToken token = default)
+    public ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default)
     {
         var versionsCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
 
@@ -124,7 +136,7 @@ public class Listen : IListen
             }
         });
 
-        var updateRowCh = Channel.CreateUnbounded<IReadOnlyCollection<UpdateRow>>();
+        var updateRowCh = Channel.CreateUnbounded<IReadOnlyCollection<ChangeEvent>>();
         _ = Task.Factory.StartNew(async () =>
         {
             await foreach (var versionUpdate in versionsCh.Reader.ReadAllAsync())
@@ -132,21 +144,25 @@ public class Listen : IListen
                 try
                 {
                     long stateId = versionUpdate.Body.state_id;
-
+                    var changeEvents = new List<ChangeEvent>();
                     foreach (var table in _tables)
                     {
                         var addedTask = RetrieveRowUpdate(table.AddTable, stateId);
                         var deletedTask = RetrieveRowUpdate(table.DeleteTable, stateId);
 
-                        var changeSets = (await Task.WhenAll(addedTask, deletedTask))
+                        var changes = (await Task.WhenAll(addedTask, deletedTask))
                             .SelectMany(x => x)
                             .GroupBy(x => x.ObjectId)
                             .Select(x => new ChangeSet(
                                         x.FirstOrDefault(y => y.TableName == table.AddTable),
-                                        x.FirstOrDefault(y => y.TableName == table.DeleteTable)));
+                                        x.FirstOrDefault(y => y.TableName == table.DeleteTable)))
+                            .Select(x => ChangeUtil.MapChangeEvent(x));
 
-                        // Here Map to UpdateRows
+                        changeEvents.AddRange(changeEvents);
                     }
+
+                    await updateRowCh.Writer.WriteAsync(changeEvents);
+
                 }
                 catch (Exception ex)
                 {
@@ -158,17 +174,6 @@ public class Listen : IListen
         });
 
         return updateRowCh.Reader;
-    }
-
-    public static UpdateRow MapUpdateRow(
-        string tableName,
-        IReadOnlyCollection<(string fieldName, object fieldValue)> rowColumnFields,
-        Operation operation)
-    {
-        return new UpdateRow(
-            tableName,
-            rowColumnFields.ToDictionary(x => x.fieldName, x => x.fieldValue),
-            operation);
     }
 
     private async Task<List<SqlRow>> RetrieveRowUpdate(string tableName, long stateId)

@@ -6,5 +6,5 @@ namespace KonstantDataValidator;
 
 public interface IListen
 {
-    ChannelReader<IReadOnlyCollection<UpdateRow>> Start(CancellationToken token = default);
+    ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default);
 }
