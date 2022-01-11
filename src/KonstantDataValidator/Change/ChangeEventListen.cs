@@ -52,14 +52,14 @@ public class ChangeEventListen : IChangeEventListen
 
     public ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default)
     {
-        var versionCh = VersionChangesCh(token);
-        var changeEventCh = ChangeEventCh(versionCh);
+        var versionChangeCh = VersionChangeCh(token);
+        var changeEventCh = ChangeEventCh(versionChangeCh);
         return changeEventCh;
     }
 
-    private ChannelReader<ChangeRow<dynamic>> VersionChangesCh(CancellationToken token)
+    private ChannelReader<ChangeRow<dynamic>> VersionChangeCh(CancellationToken token)
     {
-        var versionCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
+        var versionChangeCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
         _ = Task.Factory.StartNew<Task>(async () =>
         {
             var lowBoundLsn = -1L;
@@ -84,14 +84,14 @@ public class ChangeEventListen : IChangeEventListen
                             connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All))
                             .OrderBy(x => x.SequenceValue)
                             .ToList()
-                            .ForEach(async (x) => await versionCh.Writer.WriteAsync(x));
+                            .ForEach(async (x) => await versionChangeCh.Writer.WriteAsync(x));
 
                         lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    versionCh.Writer.Complete();
+                    versionChangeCh.Writer.Complete();
                     break;
                 }
                 catch (Exception ex)
@@ -105,7 +105,7 @@ public class ChangeEventListen : IChangeEventListen
             }
         });
 
-        return versionCh.Reader;
+        return versionChangeCh.Reader;
     }
 
     private ChannelReader<IReadOnlyCollection<ChangeEvent>> ChangeEventCh(
