@@ -1,4 +1,4 @@
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public record TableWatch
 {

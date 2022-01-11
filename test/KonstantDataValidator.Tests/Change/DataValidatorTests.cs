@@ -7,9 +7,9 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using KonstantDataValidator.Change;
 
-namespace KonstantDataValidator.Tests;
+namespace KonstantDataValidator.Tests.Change;
 
 public class DataValidatorTests : IClassFixture<DatabaseFixture>
 {

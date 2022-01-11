@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public record ChangeSet
 {
@@ -158,9 +158,7 @@ public class Listen : IListen
             for (var i = 0; i < reader.FieldCount; i++)
             {
                 if (!reader.GetDataTypeName(i).Contains("geometry"))
-                {
                     column.Add((reader.GetName(i), reader.GetValue(i)));
-                }
             }
 
             sqlRowList.Add(new SqlRow(tableName, column));

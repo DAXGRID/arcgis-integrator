@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public interface IListen
 {

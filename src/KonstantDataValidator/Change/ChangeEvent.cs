@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public enum Operation
 {

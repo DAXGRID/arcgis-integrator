@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using KonstantDataValidator.Change;
 using Xunit;
 
-namespace KonstantDataValidator.Tests;
+namespace KonstantDataValidator.Tests.Change;
 
 public class ChangeUtilTests
 {
