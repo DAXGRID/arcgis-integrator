@@ -7,6 +7,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace KonstantDataValidator.Tests;
 
@@ -25,7 +26,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
     {
         var insertCount = 10;
         var cTokenSource = new CancellationTokenSource();
-        var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.A524", "dataadmin.D524") };
+        var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
 
         var sut = new Listen(listenTables, _databaseFixture.ConnectionString);
 
@@ -44,6 +45,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
             {
                 var ids = testIds[i];
                 InsertA524(ids.objectId, ids.stateId);
+                DeleteD524(ids.objectId, ids.stateId);
                 UpdateVersionStateId(ids.stateId);
             }
         });
@@ -57,10 +59,12 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
         cTokenSource.Cancel();
 
+        System.Console.WriteLine(JsonConvert.SerializeObject(changes));
+
         using (new AssertionScope())
         {
             // Should instead retrieve the updates from the tables described in the listen constructor
-            changes.Count.Should().Be(insertCount);
+            changes.Select(x => x.Count).Sum().Should().Be(insertCount);
         }
     }
 
@@ -80,10 +84,25 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         connection.Open();
-        var sql = @"INSERT INTO DATA1.dataadmin.a524
+        var sql = @"INSERT INTO dataadmin.a524
                     (OBJECTID,
                      SDE_STATE_ID)
                      VALUES(@object_id, @state_id);";
+        using var cmd = new SqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@object_id", objectId);
+        cmd.Parameters.AddWithValue("@state_id", stateId);
+        cmd.ExecuteNonQuery();
+    }
+
+    private void DeleteD524(int objectId, int stateId)
+    {
+        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        connection.Open();
+        var sql = @"INSERT INTO dataadmin.D524
+                    (SDE_DELETES_ROW_ID,
+                     SDE_STATE_ID,
+                     DELETED_AT)
+                     VALUES(@object_id, @state_id, 0);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);

@@ -27,8 +27,8 @@ public record SqlRow
 {
     public string TableName { get; init; }
     public IReadOnlyCollection<(string fieldName, object fieldValue)> Fields;
-    public long ObjectId => (long)Fields.FirstOrDefault(x => x.fieldName == "OBJECTID").fieldValue;
-    public long StateId => (long)Fields.FirstOrDefault(x => x.fieldName == "SDE_STATE_ID").fieldValue;
+    public int ObjectId =>
+        (int)Fields.First(x => x.fieldName == "OBJECTID" || x.fieldName == "SDE_DELETES_ROW_ID").fieldValue;
 
     public SqlRow(string tableName, IReadOnlyCollection<(string fieldName, object fieldValue)> fields)
     {
@@ -40,14 +40,14 @@ public record SqlRow
 public record TableWatch
 {
     public string Table { get; init; }
-    public string DeleteTable { get; init; }
     public string AddTable { get; init; }
+    public string DeleteTable { get; init; }
 
-    public TableWatch(string table, string deleteTable, string addTable)
+    public TableWatch(string table, string addTable, string deleteTable)
     {
         Table = table;
-        DeleteTable = deleteTable;
         AddTable = addTable;
+        DeleteTable = deleteTable;
     }
 }
 
@@ -60,13 +60,17 @@ public enum Operation
 
 public record ChangeEvent
 {
-    public string TableName { get; init; }
+    public TableWatch Tables { get; init; }
     public IReadOnlyDictionary<string, object> Fields { get; init; }
     public Operation Operation { get; init; }
+    public int ObjectId => (int)(Operation == Operation.Delete
+                                 ? Fields["SDE_DELETES_ROW_ID"]
+                                 : Fields["OBJECTID"]);
+    public long StateId => (long)Fields["SDE_STATE_ID"];
 
-    public ChangeEvent(string tableName, IReadOnlyDictionary<string, object> columns, Operation operation)
+    public ChangeEvent(TableWatch tables, IReadOnlyDictionary<string, object> columns, Operation operation)
     {
-        TableName = tableName;
+        Tables = tables;
         Fields = columns;
         Operation = operation;
     }
@@ -156,9 +160,9 @@ public class Listen : IListen
                             .Select(x => new ChangeSet(
                                         x.FirstOrDefault(y => y.TableName == table.AddTable),
                                         x.FirstOrDefault(y => y.TableName == table.DeleteTable)))
-                            .Select(x => ChangeUtil.MapChangeEvent(x));
+                            .Select(x => ChangeUtil.MapChangeEvent(x, table));
 
-                        changeEvents.AddRange(changeEvents);
+                        changeEvents.AddRange(changes);
                     }
 
                     await updateRowCh.Writer.WriteAsync(changeEvents);
@@ -166,7 +170,7 @@ public class Listen : IListen
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.StackTrace); // TODO use logging
+                    Console.WriteLine(ex.Message); // TODO use logging
                 }
             }
 
@@ -181,8 +185,8 @@ public class Listen : IListen
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        var sql = $@"SELECT OBJECTID, SDE_STATE_ID FROM {tableName}
-                    WHERE SDE_STATE_ID = @state_id";
+        var sql = $@"SELECT * FROM {tableName}
+                     WHERE SDE_STATE_ID = @state_id";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@state_id", stateId);
 
@@ -193,7 +197,10 @@ public class Listen : IListen
             var column = new List<(string fieldName, object fieldValue)>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                column.Add((reader.GetName(i), reader.GetValue(i)));
+                if (!reader.GetDataTypeName(i).Contains("geometry"))
+                {
+                    column.Add((reader.GetName(i), reader.GetValue(i)));
+                }
             }
 
             sqlRowList.Add(new SqlRow(tableName, column));
