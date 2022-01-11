@@ -22,7 +22,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Receive_state_id_when_versions_table_row_is_updated()
+    public async Task Receive_change_event_when_versions_table_row_is_updated()
     {
         var cTokenSource = new CancellationTokenSource();
         var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
