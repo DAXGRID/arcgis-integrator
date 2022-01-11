@@ -7,9 +7,9 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using KonstantDataValidator.Change;
 
-namespace KonstantDataValidator.Tests;
+namespace KonstantDataValidator.Tests.Change;
 
 public class DataValidatorTests : IClassFixture<DatabaseFixture>
 {
@@ -22,12 +22,13 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Receive_state_id_when_versions_table_row_is_updated()
+    public async Task Receive_change_event_when_versions_table_row_is_updated()
     {
-        var cTokenSource = new CancellationTokenSource();
+        // We cancel after 40 sec in case of timeouts.
+        var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
 
-        var sut = new Listen(listenTables, _databaseFixture.ConnectionString);
+        var sut = new ChangeEventListen(listenTables, _databaseFixture.ConnectionString);
 
         var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 

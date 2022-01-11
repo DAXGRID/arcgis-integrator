@@ -7,16 +7,14 @@ using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public record ChangeSet
 {
     public SqlRow? Add { get; init; }
     public SqlRow? Delete { get; init; }
-    public string TableName =>
-        Add?.TableName ?? Delete?.TableName ?? throw new Exception("Could not find table name.");
 
-    public ChangeSet(SqlRow? add = null, SqlRow? delete = null)
+    public ChangeSet(SqlRow? add, SqlRow? delete)
     {
         Add = add;
         Delete = delete;
@@ -37,53 +35,14 @@ public record SqlRow
     }
 }
 
-public record TableWatch
-{
-    public string Table { get; init; }
-    public string AddTable { get; init; }
-    public string DeleteTable { get; init; }
-
-    public TableWatch(string table, string addTable, string deleteTable)
-    {
-        Table = table;
-        AddTable = addTable;
-        DeleteTable = deleteTable;
-    }
-}
-
-public enum Operation
-{
-    Create,
-    Update,
-    Delete
-}
-
-public record ChangeEvent
-{
-    public TableWatch Tables { get; init; }
-    public IReadOnlyDictionary<string, object> Fields { get; init; }
-    public Operation Operation { get; init; }
-    public int ObjectId => (int)(Operation == Operation.Delete
-                                 ? Fields["SDE_DELETES_ROW_ID"]
-                                 : Fields["OBJECTID"]);
-    public long StateId => (long)Fields["SDE_STATE_ID"];
-
-    public ChangeEvent(TableWatch tables, IReadOnlyDictionary<string, object> columns, Operation operation)
-    {
-        Tables = tables;
-        Fields = columns;
-        Operation = operation;
-    }
-}
-
-public class Listen : IListen
+public class ChangeEventListen : IChangeEventListen
 {
     private readonly string _connectionString;
     private readonly int _pollingIntervalMs;
     private readonly string _versionTableName;
     private readonly IReadOnlyCollection<TableWatch> _tables;
 
-    public Listen(IReadOnlyCollection<TableWatch> tables, string connectionString)
+    public ChangeEventListen(IReadOnlyCollection<TableWatch> tables, string connectionString)
     {
         _connectionString = connectionString;
         _pollingIntervalMs = 1000; // TODO get from constructor
@@ -93,9 +52,15 @@ public class Listen : IListen
 
     public ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default)
     {
-        var versionsCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
+        var versionCh = VersionChangesCh(token);
+        var changeEventCh = ChangeEventCh(versionCh);
+        return changeEventCh;
+    }
 
-        _ = Task.Factory.StartNew(async () =>
+    private ChannelReader<ChangeRow<dynamic>> VersionChangesCh(CancellationToken token)
+    {
+        var versionCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
+        _ = Task.Factory.StartNew<Task>(async () =>
         {
             var lowBoundLsn = -1L;
             while (true)
@@ -119,14 +84,14 @@ public class Listen : IListen
                             connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All))
                             .OrderBy(x => x.SequenceValue)
                             .ToList()
-                            .ForEach(async (x) => await versionsCh.Writer.WriteAsync(x));
+                            .ForEach(async (x) => await versionCh.Writer.WriteAsync(x));
 
                         lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    versionsCh.Writer.Complete();
+                    versionCh.Writer.Complete();
                     break;
                 }
                 catch (Exception ex)
@@ -140,10 +105,16 @@ public class Listen : IListen
             }
         });
 
-        var updateRowCh = Channel.CreateUnbounded<IReadOnlyCollection<ChangeEvent>>();
-        _ = Task.Factory.StartNew(async () =>
+        return versionCh.Reader;
+    }
+
+    private ChannelReader<IReadOnlyCollection<ChangeEvent>> ChangeEventCh(
+        ChannelReader<ChangeRow<dynamic>> versionsCh)
+    {
+        var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<ChangeEvent>>();
+        _ = Task.Factory.StartNew<Task>(async () =>
         {
-            await foreach (var versionUpdate in versionsCh.Reader.ReadAllAsync())
+            await foreach (var versionUpdate in versionsCh.ReadAllAsync())
             {
                 try
                 {
@@ -165,7 +136,7 @@ public class Listen : IListen
                         changeEvents.AddRange(changes);
                     }
 
-                    await updateRowCh.Writer.WriteAsync(changeEvents);
+                    await changeEventCh.Writer.WriteAsync(changeEvents);
                 }
                 catch (Exception ex)
                 {
@@ -173,10 +144,10 @@ public class Listen : IListen
                 }
             }
 
-            updateRowCh.Writer.Complete();
+            changeEventCh.Writer.Complete();
         });
 
-        return updateRowCh.Reader;
+        return changeEventCh;
     }
 
     private async Task<List<SqlRow>> RetrieveRowUpdate(string tableName, long stateId)
@@ -197,9 +168,7 @@ public class Listen : IListen
             for (var i = 0; i < reader.FieldCount; i++)
             {
                 if (!reader.GetDataTypeName(i).Contains("geometry"))
-                {
                     column.Add((reader.GetName(i), reader.GetValue(i)));
-                }
             }
 
             sqlRowList.Add(new SqlRow(tableName, column));

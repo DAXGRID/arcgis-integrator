@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace KonstantDataValidator;
+namespace KonstantDataValidator.Change;
 
 public static class ChangeUtil
 {
