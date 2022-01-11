@@ -24,7 +24,8 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
     [Trait("Category", "Integration")]
     public async Task Receive_change_event_when_versions_table_row_is_updated()
     {
-        var cTokenSource = new CancellationTokenSource();
+        // We cancel after 40 sec in case of timeouts.
+        var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
 
         var sut = new Listen(listenTables, _databaseFixture.ConnectionString);
