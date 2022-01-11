@@ -35,14 +35,14 @@ public record SqlRow
     }
 }
 
-public class Listen : IListen
+public class ChangeEventListen : IChangeEventListen
 {
     private readonly string _connectionString;
     private readonly int _pollingIntervalMs;
     private readonly string _versionTableName;
     private readonly IReadOnlyCollection<TableWatch> _tables;
 
-    public Listen(IReadOnlyCollection<TableWatch> tables, string connectionString)
+    public ChangeEventListen(IReadOnlyCollection<TableWatch> tables, string connectionString)
     {
         _connectionString = connectionString;
         _pollingIntervalMs = 1000; // TODO get from constructor

@@ -4,7 +4,7 @@ using System.Threading.Channels;
 
 namespace KonstantDataValidator.Change;
 
-public interface IListen
+public interface IChangeEventListen
 {
     ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default);
 }

@@ -28,7 +28,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
 
-        var sut = new Listen(listenTables, _databaseFixture.ConnectionString);
+        var sut = new ChangeEventListen(listenTables, _databaseFixture.ConnectionString);
 
         var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 
