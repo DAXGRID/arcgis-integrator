@@ -166,7 +166,6 @@ public class Listen : IListen
                     }
 
                     await updateRowCh.Writer.WriteAsync(changeEvents);
-
                 }
                 catch (Exception ex)
                 {
