@@ -42,11 +42,11 @@ public record SqlRow
 
 public class ChangeEventListen
 {
-    private readonly ILogger<ChangeEventListen> _logger;
+    private readonly ILogger _logger;
     private readonly Settings _settings;
 
     public ChangeEventListen(
-        ILogger<ChangeEventListen> logger,
+        ILogger logger,
         Settings settings)
     {
         _logger = logger;

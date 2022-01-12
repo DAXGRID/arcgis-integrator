@@ -31,7 +31,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
         var settings = new Settings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
-        var logger = A.Fake<ILogger<ChangeEventListen>>();
+        var logger = A.Fake<ILogger>();
 
         var sut = new ChangeEventListen(logger, settings);
 
