@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace KonstantDataValidator.Change;
 
@@ -10,11 +9,11 @@ public static class ChangeUtil
     {
         var operation = GetOperation(changeSet);
 
-        var fields = new Dictionary<string, object>();
+        IReadOnlyDictionary<string, object> fields;
         if (operation == Operation.Delete && changeSet.Delete is not null)
-            fields = changeSet.Delete.Fields.ToDictionary(x => x.fieldName, x => x.fieldValue);
+            fields = changeSet.Delete.Fields;
         else if (operation != Operation.Delete && changeSet.Add is not null)
-            fields = changeSet.Add.Fields.ToDictionary(x => x.fieldName, x => x.fieldValue);
+            fields = changeSet.Add.Fields;
         else
             throw new ArgumentException("Both Add and Delete in changeset cannot be null at the same time");
 
