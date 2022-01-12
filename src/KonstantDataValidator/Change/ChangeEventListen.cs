@@ -25,8 +25,8 @@ public record SqlRow
 {
     public string TableName { get; init; }
     public IReadOnlyCollection<(string fieldName, object fieldValue)> Fields;
-    public int ObjectId =>
-        (int)Fields.First(x => x.fieldName == "OBJECTID" || x.fieldName == "SDE_DELETES_ROW_ID").fieldValue;
+    public int ObjectId => (int)Fields.First(x => x.fieldName == "OBJECTID" ||
+                                             x.fieldName == "SDE_DELETES_ROW_ID").fieldValue;
 
     public SqlRow(string tableName, IReadOnlyCollection<(string fieldName, object fieldValue)> fields)
     {
