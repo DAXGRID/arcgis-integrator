@@ -34,37 +34,35 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
         // We do this after starting 'sut.Listen' because
         // the updates are only retrieved after the listener has been started.
-        _ = Task.Factory.StartNew(() =>
+        _ = Task.Factory.StartNew(async () =>
         {
             // 1. Insert
             var stateId = 1;
-            InsertA524(10, stateId);
-            UpdateVersionStateId(stateId);
+            await Insert524(10, stateId);
+            await UpdateVersionStateId(stateId);
 
             // 2. Update
             stateId = 2;
-            InsertA524(10, stateId);
-            DeleteD524(10, stateId);
-            UpdateVersionStateId(stateId);
+            await Update524(10, stateId);
+            await UpdateVersionStateId(stateId);
 
             // 3. Delete
             stateId = 3;
-            DeleteD524(10, stateId);
-            UpdateVersionStateId(stateId);
+            await Delete524(10, stateId);
+            await UpdateVersionStateId(stateId);
 
             // 4. Insert multiple
             stateId = 4;
-            InsertA524(20, stateId);
-            InsertA524(30, stateId);
-            UpdateVersionStateId(stateId);
+            await Insert524(20, stateId);
+            await Insert524(30, stateId);
+            await UpdateVersionStateId(stateId);
 
             // 5. Insert, update and delete
             stateId = 5;
-            InsertA524(40, stateId);
-            InsertA524(20, stateId);
-            DeleteD524(20, stateId);
-            DeleteD524(30, stateId);
-            UpdateVersionStateId(stateId);
+            await Insert524(40, stateId);
+            await Update524(20, stateId);
+            await Delete524(30, stateId);
+            await UpdateVersionStateId(stateId);
         });
 
         var changes = new List<IReadOnlyCollection<ChangeEvent>>();
@@ -119,22 +117,28 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         }
     }
 
-    private void UpdateVersionStateId(int stateId)
+    private async Task UpdateVersionStateId(int stateId)
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
-        connection.Open();
+        await connection.OpenAsync();
         var sql = @"UPDATE sde.SDE_versions
                     SET state_id = @state_id
                     WHERE version_id = 1;";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@state_id", stateId);
-        cmd.ExecuteNonQuery();
+        await cmd.ExecuteNonQueryAsync();
     }
 
-    private void InsertA524(int objectId, int stateId)
+    private async Task Update524(int objectId, int stateId)
+    {
+        await Insert524(objectId, stateId);
+        await Delete524(objectId, stateId);
+    }
+
+    private async Task Insert524(int objectId, int stateId)
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
-        connection.Open();
+        await connection.OpenAsync();
         var sql = @"INSERT INTO dataadmin.a524
                     (OBJECTID,
                      SDE_STATE_ID)
@@ -142,13 +146,13 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);
-        cmd.ExecuteNonQuery();
+        await cmd.ExecuteNonQueryAsync();
     }
 
-    private void DeleteD524(int objectId, int stateId)
+    private async Task Delete524(int objectId, int stateId)
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
-        connection.Open();
+        await connection.OpenAsync();
         var sql = @"INSERT INTO dataadmin.D524
                     (SDE_DELETES_ROW_ID,
                      SDE_STATE_ID,
@@ -157,6 +161,6 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);
-        cmd.ExecuteNonQuery();
+        await cmd.ExecuteNonQueryAsync();
     }
 }
