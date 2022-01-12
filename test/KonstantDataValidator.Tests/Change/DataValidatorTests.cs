@@ -8,6 +8,9 @@ using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
 using KonstantDataValidator.Change;
+using KonstantDataValidator.Config;
+using FakeItEasy;
+using Microsoft.Extensions.Logging;
 
 namespace KonstantDataValidator.Tests.Change;
 
@@ -26,9 +29,11 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
     {
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
-        var listenTables = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
+        var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
+        var settings = new Settings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
+        var logger = A.Fake<ILogger<ChangeEventListen>>();
 
-        var sut = new ChangeEventListen(listenTables, _databaseFixture.ConnectionString);
+        var sut = new ChangeEventListen(logger, settings);
 
         var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 
