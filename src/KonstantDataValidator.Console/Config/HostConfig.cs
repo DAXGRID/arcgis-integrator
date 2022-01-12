@@ -1,4 +1,3 @@
-using System.Reflection;
 using KonstantDataValidator.Console;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,7 @@ public static class HostConfig
     {
         hostBuilder.ConfigureAppConfiguration((hostingContext, config) =>
         {
-            config.SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+            config.SetBasePath(System.AppContext.BaseDirectory);
             config.AddJsonFile("appsettings.json", false, true);
         });
     }
