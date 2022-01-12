@@ -22,7 +22,6 @@ public static class HostConfig
 
     private static void ConfigureApp(IHostBuilder hostBuilder)
     {
-        //hostBuilder.UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
         hostBuilder.ConfigureAppConfiguration((hostingContext, config) =>
         {
             config.SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
