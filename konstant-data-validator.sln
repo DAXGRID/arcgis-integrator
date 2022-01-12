@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{39187F79-0
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonstantDataValidator.Tests", "test\KonstantDataValidator.Tests\KonstantDataValidator.Tests.csproj", "{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonstantDataValidator.Console", "src\KonstantDataValidator.Console\KonstantDataValidator.Console.csproj", "{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}.Release|Any CPU.Build.0 = Release|Any CPU
+		{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{009B71C4-AAA1-4EAC-8FAA-C31D429F9CFD} = {087AE8AC-05E9-4A0F-A3CA-A318AF9DE9F7}
 		{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694} = {39187F79-0DAE-469E-838B-C8890BA11520}
+		{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4} = {087AE8AC-05E9-4A0F-A3CA-A318AF9DE9F7}
 	EndGlobalSection
 EndGlobal
