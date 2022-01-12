@@ -24,8 +24,6 @@ public class KonstantValidatorHost : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogError("TEST" + _settings.ConnectionString);
-
         _logger.LogInformation("Starting kontant validator.");
 
         var tableWatches = new TableWatch[]

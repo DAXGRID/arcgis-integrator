@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using KonstantDataValidator.Config;
 
 namespace KonstantDataValidator.Change;
@@ -171,7 +170,6 @@ public class ChangeEventListen
         using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            //var column = new List<(string fieldName, object fieldValue)>();
             var fields = new Dictionary<string, object>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
