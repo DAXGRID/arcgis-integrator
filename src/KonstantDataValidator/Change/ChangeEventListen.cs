@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using KonstantDataValidator.Config;
 
 namespace KonstantDataValidator.Change;
 
@@ -37,19 +40,17 @@ public record SqlRow
     }
 }
 
-public class ChangeEventListen : IChangeEventListen
+public class ChangeEventListen
 {
-    private readonly string _connectionString;
-    private readonly int _pollingIntervalMs;
-    private readonly string _versionTableName;
-    private readonly IReadOnlyCollection<TableWatch> _tables;
+    private readonly ILogger<ChangeEventListen> _logger;
+    private readonly Settings _settings;
 
-    public ChangeEventListen(IReadOnlyCollection<TableWatch> tables, string connectionString)
+    public ChangeEventListen(
+        ILogger<ChangeEventListen> logger,
+        Settings settings)
     {
-        _connectionString = connectionString;
-        _pollingIntervalMs = 1000; // TODO get from constructor
-        _versionTableName = "sde_SDE_versions"; // TODO get from constructor
-        _tables = tables;
+        _logger = logger;
+        _settings = settings;
     }
 
     public ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default)
@@ -74,7 +75,7 @@ public class ChangeEventListen : IChangeEventListen
                     if (lowBoundLsn == -1)
                         lowBoundLsn = await GetStartLsn();
 
-                    using var connection = new SqlConnection(_connectionString);
+                    using var connection = new SqlConnection(_settings.ConnectionString);
                     await connection.OpenAsync();
 
                     var highBoundLsn = await Cdc.GetMaxLsn(connection);
@@ -82,8 +83,11 @@ public class ChangeEventListen : IChangeEventListen
                     // If the highbound lsn has changed there might be a change to the table.
                     if (lowBoundLsn <= highBoundLsn)
                     {
-                        (await Cdc.GetAllChanges(
-                            connection, _versionTableName, lowBoundLsn, highBoundLsn, AllChangesRowFilterOption.All))
+                        (await Cdc.GetAllChanges(connection,
+                                                 _settings.VersionTableName,
+                                                 lowBoundLsn,
+                                                 highBoundLsn,
+                                                 AllChangesRowFilterOption.All))
                             .OrderBy(x => x.SequenceValue)
                             .ToList()
                             .ForEach(async (x) => await versionChangeCh.Writer.WriteAsync(x));
@@ -93,16 +97,17 @@ public class ChangeEventListen : IChangeEventListen
                 }
                 catch (OperationCanceledException)
                 {
+                    _logger.LogInformation("ChangeRow channel cancelled using token.");
                     versionChangeCh.Writer.Complete();
                     break;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message); // TODO use logging
+                    _logger.LogError(ex.Message, ex);
                 }
                 finally
                 {
-                    await Task.Delay(_pollingIntervalMs);
+                    await Task.Delay(_settings.PollingIntervalMs);
                 }
             }
         });
@@ -122,7 +127,7 @@ public class ChangeEventListen : IChangeEventListen
                 {
                     long stateId = versionUpdate.Body.state_id;
                     var changeEvents = new List<ChangeEvent>();
-                    foreach (var table in _tables)
+                    foreach (var table in _settings.TableWatches)
                     {
                         var addedTask = RetrieveRowUpdate(table.AddTable, stateId);
                         var deletedTask = RetrieveRowUpdate(table.DeleteTable, stateId);
@@ -142,7 +147,7 @@ public class ChangeEventListen : IChangeEventListen
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message); // TODO use logging
+                    _logger.LogError(ex.Message, ex);
                 }
             }
 
@@ -154,7 +159,7 @@ public class ChangeEventListen : IChangeEventListen
 
     private async Task<List<SqlRow>> RetrieveRowUpdate(string tableName, long stateId)
     {
-        using var connection = new SqlConnection(_connectionString);
+        using var connection = new SqlConnection(_settings.ConnectionString);
         await connection.OpenAsync();
 
         var sql = $@"SELECT * FROM {tableName}
@@ -182,7 +187,7 @@ public class ChangeEventListen : IChangeEventListen
 
     private async Task<long> GetStartLsn()
     {
-        using var connection = new SqlConnection(_connectionString);
+        using var connection = new SqlConnection(_settings.ConnectionString);
         await connection.OpenAsync();
         var currentMaxLsn = await Cdc.GetMaxLsn(connection);
         return await Cdc.GetNextLsn(connection, currentMaxLsn);
