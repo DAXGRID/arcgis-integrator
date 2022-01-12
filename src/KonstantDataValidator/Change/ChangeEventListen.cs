@@ -24,11 +24,13 @@ public record ChangeSet
 public record SqlRow
 {
     public string TableName { get; init; }
-    public IReadOnlyCollection<(string fieldName, object fieldValue)> Fields;
-    public int ObjectId => (int)Fields.First(x => x.fieldName == "OBJECTID" ||
-                                             x.fieldName == "SDE_DELETES_ROW_ID").fieldValue;
+    public IReadOnlyDictionary<string, object> Fields { get; init; }
+    public int ObjectId =>
+        (int?)Fields.GetValueOrDefault("OBJECTID") ??
+        (int?)Fields.GetValueOrDefault("SDE_DELETES_ROW_ID") ??
+        throw new Exception($"Could not get ObjectId from {nameof(SqlRow)}.");
 
-    public SqlRow(string tableName, IReadOnlyCollection<(string fieldName, object fieldValue)> fields)
+    public SqlRow(string tableName, IReadOnlyDictionary<string, object> fields)
     {
         TableName = tableName;
         Fields = fields;
@@ -164,14 +166,15 @@ public class ChangeEventListen : IChangeEventListen
         using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            var column = new List<(string fieldName, object fieldValue)>();
+            //var column = new List<(string fieldName, object fieldValue)>();
+            var fields = new Dictionary<string, object>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
                 if (!reader.GetDataTypeName(i).Contains("geometry"))
-                    column.Add((reader.GetName(i), reader.GetValue(i)));
+                    fields.Add(reader.GetName(i), reader.GetValue(i));
             }
 
-            sqlRowList.Add(new SqlRow(tableName, column));
+            sqlRowList.Add(new SqlRow(tableName, fields));
         }
 
         return sqlRowList;

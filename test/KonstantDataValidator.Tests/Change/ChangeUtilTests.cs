@@ -18,10 +18,10 @@ public class ChangeUtilTests
     public void Created_operation_change_event_mapped()
     {
         var tables = CreateTableWatchDefault();
-        var added = new List<(string fieldName, object fieldValue)>
+        var added = new Dictionary<string, object>
         {
-            ("OBJECTID", 10),
-            ("SDE_STATE_ID", 20L)
+            {"OBJECTID", 10},
+            {"SDE_STATE_ID", 20L}
         };
         var addedSqlRow = new SqlRow("dataadmin.a524", added);
         SqlRow? deletedSqlRow = null;
@@ -30,7 +30,7 @@ public class ChangeUtilTests
 
         var expected = new ChangeEvent(
             tables,
-            added.ToDictionary(x => x.fieldName, x => x.fieldValue),
+            added,
             Operation.Create);
 
         var result = ChangeUtil.MapChangeEvent(changeSet, tables);
@@ -42,23 +42,23 @@ public class ChangeUtilTests
     public void Update_operation_change_event_mapped()
     {
         var tables = CreateTableWatchDefault();
-        var added = new List<(string fieldName, object fieldValue)>
-            {
-                ("OBJECTID", 10),
-                ("SDE_STATE_ID", 20L)
-            };
-        var deleted = new List<(string fieldName, object fieldValue)>
-            {
-                ("OBJECTID", 10),
-                ("SDE_STATE_ID", 20L)
-            };
+        var added = new Dictionary<string, object>
+        {
+            {"OBJECTID", 10},
+            {"SDE_STATE_ID", 20L}
+        };
+        var deleted = new Dictionary<string, object>
+        {
+            {"OBJECTID", 10},
+            {"SDE_STATE_ID", 20L}
+        };
         var addedSqlRow = new SqlRow("dataadmin.a524", added);
         var deletedSqlRow = new SqlRow("dataadmin.D524", deleted);
         var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
 
         var expected = new ChangeEvent(
             tables,
-            added.ToDictionary(x => x.fieldName, x => x.fieldValue),
+            added,
             Operation.Update);
 
         var result = ChangeUtil.MapChangeEvent(changeSet, tables);
@@ -71,10 +71,10 @@ public class ChangeUtilTests
     {
         var tables = CreateTableWatchDefault();
         var added = new List<(string fieldName, object fieldValue)>();
-        var deleted = new List<(string fieldName, object fieldValue)>
+        var deleted = new Dictionary<string, object>
         {
-            ("SDE_DELETES_ROW_ID", 10),
-            ("SDE_STATE_ID", 20L)
+            {"SDE_DELETES_ROW_ID", 10},
+            {"SDE_STATE_ID", 20L}
         };
         SqlRow? addedSqlRow = null;
         var deletedSqlRow = new SqlRow("dataadmin.D524", deleted);
@@ -82,7 +82,7 @@ public class ChangeUtilTests
 
         var expected = new ChangeEvent(
             tables,
-            deleted.ToDictionary(x => x.fieldName, x => x.fieldValue),
+            deleted,
             Operation.Delete);
 
         var result = ChangeUtil.MapChangeEvent(changeSet, tables);
