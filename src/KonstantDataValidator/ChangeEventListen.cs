@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using KonstantDataValidator.Config;
 using System.Numerics;
 
-namespace KonstantDataValidator.Change;
+namespace KonstantDataValidator;
 
 public record ChangeSet
 {

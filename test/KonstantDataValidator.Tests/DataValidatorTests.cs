@@ -7,12 +7,11 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
-using KonstantDataValidator.Change;
 using KonstantDataValidator.Config;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 
-namespace KonstantDataValidator.Tests.Change;
+namespace KonstantDataValidator.Tests;
 
 public class DataValidatorTests : IClassFixture<DatabaseFixture>
 {
