@@ -1,5 +1,6 @@
 using System.Text.Json;
 using KonstantDataValidator.Change;
+using KonstantDataValidator.Config;
 using KonstantDataValidator.Console.Config;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,10 +29,10 @@ public class KonstantValidatorHost : IHostedService
 
         var tableWatches = new TableWatch[]
         {
-            new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524")
+            new KonstantDataValidator.Config.TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524")
         };
 
-        var settings = new KonstantDataValidator.Config.Settings(
+        var settings = new ValidatorSettings(
             _settings.ConnectionString, _settings.VersionTableName, 1000, tableWatches);
 
         var changeEventListen = new ChangeEventListen(_logger, settings);
