@@ -1,5 +1,4 @@
 using System.Text.Json;
-using KonstantDataValidator.Change;
 using KonstantDataValidator.Config;
 using KonstantDataValidator.Console.Config;
 using Microsoft.Extensions.Hosting;
@@ -29,7 +28,7 @@ public class KonstantValidatorHost : IHostedService
 
         var tableWatches = new TableWatch[]
         {
-            new KonstantDataValidator.Config.TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524")
+            new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524")
         };
 
         var settings = new ValidatorSettings(
