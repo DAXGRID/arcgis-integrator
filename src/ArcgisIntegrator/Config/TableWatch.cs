@@ -1,4 +1,4 @@
-namespace KonstantDataValidator.Config;
+namespace ArcgisIntegrator.Config;
 
 public record TableWatch
 {

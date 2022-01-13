@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using KonstantDataValidator.Config;
+using ArcgisIntegrator.Config;
 
-namespace KonstantDataValidator;
+namespace ArcgisIntegrator;
 
 internal static class ChangeUtil
 {

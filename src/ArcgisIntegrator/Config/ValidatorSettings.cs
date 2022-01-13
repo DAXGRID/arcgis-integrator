@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace KonstantDataValidator.Config;
+namespace ArcgisIntegrator.Config;
 
 public record ValidatorSettings
 {
