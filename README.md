@@ -1,5 +1,11 @@
 # Konstant data validator
 
+## Publish console app local directory for Windows x64
+
+```sh
+dotnet publish src/KonstantDataValidator.Console/KonstantDataValidator.Console.csproj --sc --runtime win-x64 -o ./publish
+```
+
 ## Running database for tests in docker.
 
 ```sh
@@ -27,5 +33,7 @@ dotnet test --filter Category=Integration
 ```
 
 ## Overview image
+
+The overview image shows an example of how the library can be used.
 
 ![Overview image](docs/overview.png)
