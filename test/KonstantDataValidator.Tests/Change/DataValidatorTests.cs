@@ -162,7 +162,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
                     (SDE_DELETES_ROW_ID,
                      SDE_STATE_ID,
                      DELETED_AT)
-                     VALUES(@object_id, @state_id, 0);";
+                     VALUES(@object_id, 0, @state_id);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);

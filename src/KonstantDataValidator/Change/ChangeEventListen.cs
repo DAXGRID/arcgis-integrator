@@ -129,8 +129,8 @@ public class ChangeEventListen
                     var changeEvents = new List<ChangeEvent>();
                     foreach (var table in _settings.TableWatches)
                     {
-                        var addedTask = RetrieveRowUpdate(table.AddTable, stateId);
-                        var deletedTask = RetrieveRowUpdate(table.DeleteTable, stateId);
+                        var addedTask = RetrieveRowAdd(table.AddTable, stateId);
+                        var deletedTask = RetrieveRowDelete(table.DeleteTable, stateId);
 
                         var changes = (await Task.WhenAll(addedTask, deletedTask))
                             .SelectMany(x => x)
@@ -157,13 +157,42 @@ public class ChangeEventListen
         return changeEventCh;
     }
 
-    private async Task<List<SqlRow>> RetrieveRowUpdate(string tableName, long stateId)
+    private async Task<List<SqlRow>> RetrieveRowAdd(string tableName, long stateId)
     {
         using var connection = new SqlConnection(_settings.ConnectionString);
         await connection.OpenAsync();
 
-        var sql = $@"SELECT * FROM {tableName}
+        var sql = $@"SELECT *
+                     FROM {tableName}
                      WHERE SDE_STATE_ID = @state_id";
+        using var cmd = new SqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@state_id", stateId);
+
+        var sqlRowList = new List<SqlRow>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var fields = new Dictionary<string, object>();
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                if (!reader.GetDataTypeName(i).Contains("geometry"))
+                    fields.Add(reader.GetName(i), reader.GetValue(i));
+            }
+
+            sqlRowList.Add(new SqlRow(tableName, fields));
+        }
+
+        return sqlRowList;
+    }
+
+    private async Task<List<SqlRow>> RetrieveRowDelete(string tableName, long stateId)
+    {
+        using var connection = new SqlConnection(_settings.ConnectionString);
+        await connection.OpenAsync();
+
+        var sql = $@"SELECT *
+                     FROM {tableName}
+                     WHERE SDE_STATE_ID = 0 AND DELETED_AT = @state_id";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@state_id", stateId);
 

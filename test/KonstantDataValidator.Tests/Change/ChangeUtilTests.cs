@@ -74,7 +74,7 @@ public class ChangeUtilTests
         var deleted = new Dictionary<string, object>
         {
             {"SDE_DELETES_ROW_ID", 10},
-            {"SDE_STATE_ID", 20L}
+            {"DELETED_AT", 0L}
         };
         SqlRow? addedSqlRow = null;
         var deletedSqlRow = new SqlRow("dataadmin.D524", deleted);
