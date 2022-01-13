@@ -12,34 +12,6 @@ using System.Numerics;
 
 namespace KonstantDataValidator;
 
-public record ChangeSet
-{
-    public SqlRow? Add { get; init; }
-    public SqlRow? Delete { get; init; }
-
-    public ChangeSet(SqlRow? add, SqlRow? delete)
-    {
-        Add = add;
-        Delete = delete;
-    }
-}
-
-public record SqlRow
-{
-    public string TableName { get; init; }
-    public IReadOnlyDictionary<string, object> Fields { get; init; }
-    public int ObjectId =>
-        (int?)Fields.GetValueOrDefault("OBJECTID") ??
-        (int?)Fields.GetValueOrDefault("SDE_DELETES_ROW_ID") ??
-        throw new Exception($"Could not get ObjectId from {nameof(SqlRow)}.");
-
-    public SqlRow(string tableName, IReadOnlyDictionary<string, object> fields)
-    {
-        TableName = tableName;
-        Fields = fields;
-    }
-}
-
 public class ChangeEventListen
 {
     private readonly ILogger _logger;
