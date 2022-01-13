@@ -8,6 +8,7 @@ using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 using Microsoft.Extensions.Logging;
 using KonstantDataValidator.Config;
+using System.Numerics;
 
 namespace KonstantDataValidator.Change;
 
@@ -64,7 +65,7 @@ public class ChangeEventListen
         var versionChangeCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
         _ = Task.Factory.StartNew<Task>(async () =>
         {
-            var lowBoundLsn = -1L;
+            var lowBoundLsn = new BigInteger(-1);
             while (true)
             {
                 try
@@ -183,7 +184,7 @@ public class ChangeEventListen
         return sqlRowList;
     }
 
-    private async Task<long> GetStartLsn()
+    private async Task<BigInteger> GetStartLsn()
     {
         using var connection = new SqlConnection(_settings.ConnectionString);
         await connection.OpenAsync();
