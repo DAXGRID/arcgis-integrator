@@ -22,7 +22,7 @@ public class ChangeUtilTests
             {"OBJECTID", 10},
             {"SDE_STATE_ID", 20L}
         };
-        var addedSqlRow = new SqlRow("dataadmin.a524", added);
+        var addedSqlRow = new SqlRow(tables.AddTable, added);
         SqlRow? deletedSqlRow = null;
 
         var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
@@ -51,8 +51,8 @@ public class ChangeUtilTests
             {"OBJECTID", 10},
             {"SDE_STATE_ID", 20L}
         };
-        var addedSqlRow = new SqlRow("dataadmin.a524", added);
-        var deletedSqlRow = new SqlRow("dataadmin.D524", deleted);
+        var addedSqlRow = new SqlRow(tables.AddTable, added);
+        var deletedSqlRow = new SqlRow(tables.DeleteTable, deleted);
         var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
 
         var expected = new ChangeEvent(
@@ -76,13 +76,35 @@ public class ChangeUtilTests
             {"DELETED_AT", 0L}
         };
         SqlRow? addedSqlRow = null;
-        var deletedSqlRow = new SqlRow("dataadmin.D524", deleted);
+        var deletedSqlRow = new SqlRow(tables.DeleteTable, deleted);
         var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
 
         var expected = new ChangeEvent(
             tables,
             deleted,
             Operation.Delete);
+
+        var result = ChangeUtil.MapChangeEvent(changeSet, tables);
+        result.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Initial_sql_row_mapped_as_created()
+    {
+        var tables = CreateTableWatchDefault();
+        var added = new Dictionary<string, object>
+        {
+            {"OBJECTID", 10}
+        };
+        var addedSqlRow = new SqlRow(tables.InitialTable, added);
+        SqlRow? deletedSqlRow = null;
+        var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
+
+        var expected = new ChangeEvent(
+            tables,
+            added,
+            Operation.Create);
 
         var result = ChangeUtil.MapChangeEvent(changeSet, tables);
         result.Should().BeEquivalentTo(expected);

@@ -24,6 +24,41 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
     [Fact]
     [Trait("Category", "Integration")]
+    public async Task Receive_initial_change_event_load()
+    {
+        // We cancel after 40 sec in case of timeouts.
+        var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
+        var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
+        var logger = A.Fake<ILogger>();
+
+        var sut = new InitialChangeEventLoad(logger, settings);
+
+        var objectIds = Enumerable.Range(0, 10).ToList();
+        objectIds.ForEach(async (x) => await InsertKabelTable(x));
+
+        var initialLoadCh = sut.Start();
+
+        var result = new List<ChangeEvent>();
+        for (var i = 0; i < 10; i++)
+        {
+            var changeEvent = await initialLoadCh.ReadAsync(cTokenSource.Token);
+            result.Add(changeEvent);
+        }
+
+        // We close the channels since we're done consuming.
+        cTokenSource.Cancel();
+
+        using (new AssertionScope())
+        {
+            result.Count.Should().Be(10);
+            result.Select(x => x.ObjectId).Should().BeEquivalentTo(objectIds);
+            result.All(x => x.Operation == Operation.Create).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
     public async Task Receive_change_event_when_versions_table_row_is_updated()
     {
         // We cancel after 40 sec in case of timeouts.
@@ -72,10 +107,11 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var changes = new List<IReadOnlyCollection<ChangeEvent>>();
         for (var i = 0; i < 5; i++)
         {
-            var change = await stateIdUpdatedCh.ReadAsync();
+            var change = await stateIdUpdatedCh.ReadAsync(cTokenSource.Token);
             changes.Add(change);
         }
 
+        // We close the channels since we're done consuming.
         cTokenSource.Cancel();
 
         using (new AssertionScope())
@@ -119,6 +155,17 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
             fifthChange[2].StateId.Should().Be(5);
             fifthChange[2].ObjectId.Should().Be(30);
         }
+    }
+
+    private async Task InsertKabelTable(int objectId)
+    {
+        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        await connection.OpenAsync();
+        var sql = @"INSERT INTO dataadmin.KABEL (OBJECTID)
+                    VALUES(@object_id);";
+        using var cmd = new SqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@object_id", objectId);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     private async Task UpdateVersionStateId(int stateId)

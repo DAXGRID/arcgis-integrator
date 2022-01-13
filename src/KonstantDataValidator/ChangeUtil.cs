@@ -4,7 +4,7 @@ using KonstantDataValidator.Config;
 
 namespace KonstantDataValidator;
 
-public static class ChangeUtil
+internal static class ChangeUtil
 {
     public static ChangeEvent MapChangeEvent(ChangeSet changeSet, TableWatch tableWatch)
     {
