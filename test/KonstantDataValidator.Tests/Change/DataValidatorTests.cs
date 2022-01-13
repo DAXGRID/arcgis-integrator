@@ -30,7 +30,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
-        var settings = new Settings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
+        var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
         var logger = A.Fake<ILogger>();
 
         var sut = new ChangeEventListen(logger, settings);

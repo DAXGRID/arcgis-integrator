@@ -43,11 +43,11 @@ public record SqlRow
 public class ChangeEventListen
 {
     private readonly ILogger _logger;
-    private readonly Settings _settings;
+    private readonly ValidatorSettings _settings;
 
     public ChangeEventListen(
         ILogger logger,
-        Settings settings)
+        ValidatorSettings settings)
     {
         _logger = logger;
         _settings = settings;

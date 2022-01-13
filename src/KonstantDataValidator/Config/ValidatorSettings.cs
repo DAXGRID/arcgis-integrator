@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace KonstantDataValidator.Config;
 
-public record Settings
+public record ValidatorSettings
 {
     public string ConnectionString { get; init; }
     public string VersionTableName { get; init; }
     public int PollingIntervalMs { get; init; }
     public IReadOnlyCollection<TableWatch> TableWatches { get; init; }
 
-    public Settings(
+    public ValidatorSettings(
         string connectionString,
         string versionsTableName,
         int pollingIntervalMs,
