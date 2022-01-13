@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using KonstantDataValidator.Change;
+using KonstantDataValidator.Config;
 using Xunit;
 
 namespace KonstantDataValidator.Tests.Change;
