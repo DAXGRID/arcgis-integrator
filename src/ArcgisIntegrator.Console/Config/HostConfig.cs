@@ -1,4 +1,5 @@
-using KonstantDataValidator.Console;
+using ArcgisIntegrator.Console;
+using ArcgisIntegrator.Console.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -6,7 +7,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
 
-namespace KonstantDataValidator.Config;
+namespace ArcgisIntegrator.Config;
 
 public static class HostConfig
 {
@@ -33,8 +34,8 @@ public static class HostConfig
         hostBuilder.ConfigureServices((hostContext, services) =>
         {
             services.AddOptions();
-            services.AddHostedService<KonstantValidatorHost>();
-            services.Configure<KonstantDataValidator.Console.Config.Settings>(s => hostContext.Configuration.GetSection("Settings").Bind(s));
+            services.AddHostedService<ArcgisIntegratorHost>();
+            services.Configure<Settings>(s => hostContext.Configuration.GetSection("Settings").Bind(s));
         });
     }
 

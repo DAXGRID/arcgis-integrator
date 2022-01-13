@@ -5,13 +5,13 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{087AE8AC-05E9-4A0F-A3CA-A318AF9DE9F7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonstantDataValidator", "src\KonstantDataValidator\KonstantDataValidator.csproj", "{009B71C4-AAA1-4EAC-8FAA-C31D429F9CFD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator", "src\ArcgisIntegrator\ArcgisIntegrator.csproj", "{009B71C4-AAA1-4EAC-8FAA-C31D429F9CFD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{39187F79-0DAE-469E-838B-C8890BA11520}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonstantDataValidator.Tests", "test\KonstantDataValidator.Tests\KonstantDataValidator.Tests.csproj", "{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator.Tests", "test\ArcgisIntegrator.Tests\ArcgisIntegrator.Tests.csproj", "{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonstantDataValidator.Console", "src\KonstantDataValidator.Console\KonstantDataValidator.Console.csproj", "{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator.Console", "src\ArcgisIntegrator.Console\ArcgisIntegrator.Console.csproj", "{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

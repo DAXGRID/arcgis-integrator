@@ -1,9 +1,9 @@
-# Konstant data validator
+# Arcgis integrator
 
 ## Publish console app local directory for Windows x64
 
 ```sh
-dotnet publish src/KonstantDataValidator.Console/KonstantDataValidator.Console.csproj --sc --runtime win-x64 -o ./publish
+dotnet publish src/ArcgisIntegrator.Console/ArcgisIntegrator.Console.csproj --sc --runtime win-x64 -o ./publish
 ```
 
 ## Running database for tests in docker.

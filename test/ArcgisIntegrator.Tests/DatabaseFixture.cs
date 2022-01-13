@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 
-namespace KonstantDataValidator.Tests;
+namespace ArcgisIntegrator.Tests;
 
 public class DatabaseFixture : IDisposable
 {

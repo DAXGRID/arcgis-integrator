@@ -1,7 +1,7 @@
-﻿using KonstantDataValidator.Config;
+﻿using ArcgisIntegrator.Config;
 using Microsoft.Extensions.Hosting;
 
-namespace KonstantDataValidator.Console;
+namespace ArcgisIntegrator.Console;
 
 public class Program
 {

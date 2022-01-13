@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace KonstantDataValidator;
+namespace ArcgisIntegrator;
 
 internal record SqlRow
 {

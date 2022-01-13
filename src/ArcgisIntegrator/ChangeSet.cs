@@ -1,4 +1,4 @@
-namespace KonstantDataValidator;
+namespace ArcgisIntegrator;
 
 internal record ChangeSet
 {

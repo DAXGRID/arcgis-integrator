@@ -1,14 +1,13 @@
 using System.Collections.Generic;
-using KonstantDataValidator.Config;
+using ArcgisIntegrator.Config;
 
-namespace KonstantDataValidator;
+namespace ArcgisIntegrator;
 
 public enum Operation
 {
     Create,
     Update,
     Delete
-
 }
 
 public record ChangeEvent

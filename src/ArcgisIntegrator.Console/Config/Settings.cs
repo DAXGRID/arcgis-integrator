@@ -1,4 +1,4 @@
-namespace KonstantDataValidator.Console.Config;
+namespace ArcgisIntegrator.Console.Config;
 
 public record Settings
 {

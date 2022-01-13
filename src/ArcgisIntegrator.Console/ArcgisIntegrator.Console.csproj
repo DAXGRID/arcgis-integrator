@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KonstantDataValidator\KonstantDataValidator.csproj" />
+    <ProjectReference Include="..\ArcgisIntegrator\ArcgisIntegrator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

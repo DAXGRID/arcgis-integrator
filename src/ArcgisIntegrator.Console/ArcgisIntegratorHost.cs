@@ -1,20 +1,20 @@
 using System.Text.Json;
-using KonstantDataValidator.Config;
-using KonstantDataValidator.Console.Config;
+using ArcgisIntegrator.Config;
+using ArcgisIntegrator.Console.Config;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace KonstantDataValidator.Console;
+namespace ArcgisIntegrator.Console;
 
-public class KonstantValidatorHost : IHostedService
+public class ArcgisIntegratorHost : IHostedService
 {
-    private ILogger<KonstantValidatorHost> _logger;
+    private ILogger<ArcgisIntegratorHost> _logger;
     private CancellationTokenSource _cancellationTokenSource;
     private Settings _settings;
 
-    public KonstantValidatorHost(
-        ILogger<KonstantValidatorHost> logger,
+    public ArcgisIntegratorHost(
+        ILogger<ArcgisIntegratorHost> logger,
         IOptions<Settings> settings)
     {
         _logger = logger;

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using FluentAssertions;
-using KonstantDataValidator.Config;
+using ArcgisIntegrator.Config;
 using Xunit;
 
-namespace KonstantDataValidator.Tests;
+namespace ArcgisIntegrator.Tests;
 
 public class ChangeUtilTests
 {

@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using MsSqlCdc;
 using Microsoft.Extensions.Logging;
-using KonstantDataValidator.Config;
+using ArcgisIntegrator.Config;
 using System.Numerics;
 
-namespace KonstantDataValidator;
+namespace ArcgisIntegrator;
 
 public class ChangeEventListen
 {

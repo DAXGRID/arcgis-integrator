@@ -7,11 +7,11 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
 using System.Collections.Generic;
-using KonstantDataValidator.Config;
+using ArcgisIntegrator.Config;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 
-namespace KonstantDataValidator.Tests;
+namespace ArcgisIntegrator.Tests;
 
 public class DataValidatorTests : IClassFixture<DatabaseFixture>
 {
