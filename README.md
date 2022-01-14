@@ -1,5 +1,7 @@
 # Arcgis integrator
 
+You can get the NuGet package [here.](https://www.nuget.org/packages/DAX.ArcgisIntegrator/)
+
 ## Example
 
 Example can be found [here.](https://github.com/DAXGRID/arcgis-integrator/tree/master/src/ArcgisIntegrator.Console)
