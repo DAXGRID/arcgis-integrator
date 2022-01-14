@@ -28,7 +28,7 @@ jobs:
       - run:
           name: Push to NuGet
           command: |
-            dotnet pack ./src/ArcgisIntegrator/ArcgisIntegrator.csproj -o ./publish --no-dependencies -c Release -p:PackageVersion=${CIRCLE_TAG}
+            dotnet pack ./src/ArcgisIntegrator/ArcgisIntegrator.csproj -o ./publish --no-dependencies -c Release -p:PackageVersion=${CIRCLE_TAG} -p:PackageID=DAX.ArcgisIntegrator
             dotnet nuget push --source "${NUGET_FEED_URL}" --api-key="${NUGET_KEY}" "./publish/*.nupkg"
 workflows:
   build-test-publish_nuget:
