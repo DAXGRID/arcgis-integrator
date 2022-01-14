@@ -34,12 +34,18 @@ public class ArcgisIntegratorHost : IHostedService
         var settings = new ValidatorSettings(
             _settings.ConnectionString, _settings.VersionTableName, 1000, tableWatches);
 
-        var changeEventListen = new ChangeEventListen(_logger, settings);
-        var changeEventReader = changeEventListen.Start(_cancellationTokenSource.Token);
-
         Task.Factory.StartNew(async () =>
         {
-            await foreach (var changeEvents in changeEventReader.ReadAllAsync())
+            _logger.LogInformation("Starting initial load.");
+            var initialLoadReaderCh = new InitialChangeEventLoad(_logger, settings).Start();
+            await foreach (var changeEvent in initialLoadReaderCh.ReadAllAsync())
+            {
+                _logger.LogInformation(JsonSerializer.Serialize(changeEvent));
+            }
+
+            _logger.LogInformation("Starting listening for change events.");
+            var changeEventReaderCh = new ChangeEventListen(_logger, settings).Start(_cancellationTokenSource.Token);
+            await foreach (var changeEvents in changeEventReaderCh.ReadAllAsync())
             {
                 _logger.LogInformation(JsonSerializer.Serialize(changeEvents));
             }
