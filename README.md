@@ -4,7 +4,7 @@ You can get the NuGet package [here.](https://www.nuget.org/packages/DAX.ArcgisI
 
 ## Example
 
-Example can be found [here.](https://github.com/DAXGRID/arcgis-integrator/tree/master/src/ArcgisIntegrator.Console)
+Example can be found [here.](https://github.com/DAXGRID/arcgis-integrator/tree/master/example/ArcgisIntegrator.Console)
 
 ## Publish example app
 
