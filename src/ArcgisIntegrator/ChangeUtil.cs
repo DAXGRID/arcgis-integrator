@@ -6,7 +6,7 @@ namespace ArcgisIntegrator;
 
 internal static class ChangeUtil
 {
-    public static ChangeEvent MapChangeEvent(ChangeSet changeSet, TableWatch tableWatch)
+    public static DataEvent MapChangeEvent(ArcgisChangeSet changeSet, TableWatch tableWatch)
     {
         var operation = GetOperation(changeSet);
 
@@ -18,10 +18,10 @@ internal static class ChangeUtil
         else
             throw new ArgumentException("Both Add and Delete in changeset cannot be null at the same time");
 
-        return new ChangeEvent(tableWatch, fields, operation);
+        return new DataEvent(tableWatch, fields, operation);
     }
 
-    private static Operation GetOperation(ChangeSet changeSet)
+    private static Operation GetOperation(ArcgisChangeSet changeSet)
     {
         if (changeSet.Add is not null && changeSet.Delete is null)
             return Operation.Create;
@@ -30,6 +30,6 @@ internal static class ChangeUtil
         else if (changeSet.Add is null && changeSet.Delete is not null)
             return Operation.Delete;
         else
-            throw new Exception($"Could not convert {nameof(ChangeSet)} to {nameof(Operation)}");
+            throw new Exception($"Could not convert {nameof(ArcgisChangeSet)} to {nameof(Operation)}");
     }
 }

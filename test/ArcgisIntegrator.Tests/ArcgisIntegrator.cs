@@ -13,18 +13,18 @@ using Microsoft.Extensions.Logging;
 
 namespace ArcgisIntegrator.Tests;
 
-public class DataValidatorTests : IClassFixture<DatabaseFixture>
+public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 {
     private readonly DatabaseFixture _databaseFixture;
 
-    public DataValidatorTests(DatabaseFixture databaseFixture)
+    public ArcgisIntegratorTests(DatabaseFixture databaseFixture)
     {
         _databaseFixture = databaseFixture;
     }
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Receive_initial_change_event_load()
+    public async Task Receive_initial_instance_set()
     {
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
@@ -32,14 +32,14 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
         var logger = A.Fake<ILogger>();
 
-        var sut = new InitialChangeEventLoad(logger, settings);
-
+        // We insert 10 rows as initial dataset
         var objectIds = Enumerable.Range(0, 10).ToList();
         objectIds.ForEach(async (x) => await InsertKabelTable(x));
 
+        var sut = new InstanceSetLoader(logger, settings);
         var initialLoadCh = sut.Start();
 
-        var result = new List<ChangeEvent>();
+        var result = new List<DataEvent>();
         await foreach (var changeEvent in initialLoadCh.ReadAllAsync())
         {
             result.Add(changeEvent);
@@ -55,7 +55,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Receive_change_event_when_versions_table_row_is_updated()
+    public async Task Receive_data_events_when_versions_table_row_is_updated()
     {
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
@@ -63,8 +63,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
         var logger = A.Fake<ILogger>();
 
-        var sut = new ChangeEventListen(logger, settings);
-
+        var sut = new ChangeSetListener(logger, settings);
         var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 
         // We do this after starting 'sut.Listen' because
@@ -100,7 +99,7 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
             await UpdateVersionStateId(stateId);
         });
 
-        var changes = new List<IReadOnlyCollection<ChangeEvent>>();
+        var changes = new List<IReadOnlyCollection<DataEvent>>();
         for (var i = 0; i < 5; i++)
         {
             var change = await stateIdUpdatedCh.ReadAsync(cTokenSource.Token);

@@ -25,9 +25,9 @@ public class ChangeUtilTests
         var addedSqlRow = new SqlRow(tables.AddTable, added);
         SqlRow? deletedSqlRow = null;
 
-        var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
+        var changeSet = new ArcgisChangeSet(addedSqlRow, deletedSqlRow);
 
-        var expected = new ChangeEvent(
+        var expected = new DataEvent(
             tables,
             added,
             Operation.Create);
@@ -53,9 +53,9 @@ public class ChangeUtilTests
         };
         var addedSqlRow = new SqlRow(tables.AddTable, added);
         var deletedSqlRow = new SqlRow(tables.DeleteTable, deleted);
-        var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
+        var changeSet = new ArcgisChangeSet(addedSqlRow, deletedSqlRow);
 
-        var expected = new ChangeEvent(
+        var expected = new DataEvent(
             tables,
             added,
             Operation.Update);
@@ -77,9 +77,9 @@ public class ChangeUtilTests
         };
         SqlRow? addedSqlRow = null;
         var deletedSqlRow = new SqlRow(tables.DeleteTable, deleted);
-        var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
+        var changeSet = new ArcgisChangeSet(addedSqlRow, deletedSqlRow);
 
-        var expected = new ChangeEvent(
+        var expected = new DataEvent(
             tables,
             deleted,
             Operation.Delete);
@@ -99,9 +99,9 @@ public class ChangeUtilTests
         };
         var addedSqlRow = new SqlRow(tables.InitialTable, added);
         SqlRow? deletedSqlRow = null;
-        var changeSet = new ChangeSet(addedSqlRow, deletedSqlRow);
+        var changeSet = new ArcgisChangeSet(addedSqlRow, deletedSqlRow);
 
-        var expected = new ChangeEvent(
+        var expected = new DataEvent(
             tables,
             added,
             Operation.Create);

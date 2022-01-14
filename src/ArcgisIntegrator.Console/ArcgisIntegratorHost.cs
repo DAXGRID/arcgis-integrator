@@ -37,14 +37,14 @@ public class ArcgisIntegratorHost : IHostedService
         Task.Factory.StartNew(async () =>
         {
             _logger.LogInformation("Starting initial load.");
-            var initialLoadReaderCh = new InitialChangeEventLoad(_logger, settings).Start();
+            var initialLoadReaderCh = new InstanceSetLoader(_logger, settings).Start();
             await foreach (var changeEvent in initialLoadReaderCh.ReadAllAsync())
             {
                 _logger.LogInformation(JsonSerializer.Serialize(changeEvent));
             }
 
             _logger.LogInformation("Starting listening for change events.");
-            var changeEventReaderCh = new ChangeEventListen(_logger, settings).Start(_cancellationTokenSource.Token);
+            var changeEventReaderCh = new ChangeSetListener(_logger, settings).Start(_cancellationTokenSource.Token);
             await foreach (var changeEvents in changeEventReaderCh.ReadAllAsync())
             {
                 _logger.LogInformation(JsonSerializer.Serialize(changeEvents));
