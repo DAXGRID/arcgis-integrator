@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{39187F79-0
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator.Tests", "test\ArcgisIntegrator.Tests\ArcgisIntegrator.Tests.csproj", "{0FF8AF15-EA31-4A1B-B97E-4CD8F460C694}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator.Console", "src\ArcgisIntegrator.Console\ArcgisIntegrator.Console.csproj", "{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcgisIntegrator.Console", "examples\ArcgisIntegrator.Console\ArcgisIntegrator.Console.csproj", "{496DF63F-F224-4EDC-BA1F-EBD8CC8675D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -21,11 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ArcgisIntegrator\ArcgisIntegrator.csproj" />
-  </ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\src\ArcgisIntegrator\ArcgisIntegrator.csproj" />
   </ItemGroup>
 
 </Project>
