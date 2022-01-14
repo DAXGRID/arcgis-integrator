@@ -9,25 +9,25 @@ using System;
 
 namespace ArcgisIntegrator;
 
-public class InitialChangeEventLoad
+public class InstanceSetLoader
 {
     private ValidatorSettings _settings;
     private ILogger _logger;
 
-    public InitialChangeEventLoad(ILogger logger, ValidatorSettings settings)
+    public InstanceSetLoader(ILogger logger, ValidatorSettings settings)
     {
         _logger = logger;
         _settings = settings;
     }
 
-    public ChannelReader<ChangeEvent> Start(CancellationToken token = default)
+    public ChannelReader<DataEvent> Start(CancellationToken token = default)
     {
         return LoadTableData();
     }
 
-    private ChannelReader<ChangeEvent> LoadTableData(CancellationToken token = default)
+    private ChannelReader<DataEvent> LoadTableData(CancellationToken token = default)
     {
-        var initialLoadCh = Channel.CreateUnbounded<ChangeEvent>();
+        var initialLoadCh = Channel.CreateUnbounded<DataEvent>();
 
         var _ = Task.Factory.StartNew(async () =>
         {
@@ -39,7 +39,7 @@ public class InitialChangeEventLoad
 
                     await foreach (var sqlRow in ReadAllRows(tableWatch.InitialTable))
                     {
-                        var changeEvent = ChangeUtil.MapChangeEvent(new ChangeSet(sqlRow, null), tableWatch);
+                        var changeEvent = ChangeUtil.MapChangeEvent(new ArcgisChangeSet(sqlRow, null), tableWatch);
                         await initialLoadCh.Writer.WriteAsync(changeEvent);
                     }
                 }

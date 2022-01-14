@@ -10,7 +10,7 @@ public enum Operation
     Delete
 }
 
-public record ChangeEvent
+public record DataEvent
 {
     public TableWatch Tables { get; init; }
     public IReadOnlyDictionary<string, object> Fields { get; init; }
@@ -28,7 +28,7 @@ public record ChangeEvent
         ? (long)Fields["DELETED_AT"]
         : ((long?)Fields.GetValueOrDefault("SDE_STATE_ID") ?? -1);
 
-    public ChangeEvent(TableWatch tables, IReadOnlyDictionary<string, object> columns, Operation operation)
+    public DataEvent(TableWatch tables, IReadOnlyDictionary<string, object> columns, Operation operation)
     {
         Tables = tables;
         Fields = columns;

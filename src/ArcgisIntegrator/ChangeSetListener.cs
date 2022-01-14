@@ -12,12 +12,12 @@ using System.Numerics;
 
 namespace ArcgisIntegrator;
 
-public class ChangeEventListen
+public class ChangeSetListener
 {
     private readonly ILogger _logger;
     private readonly ValidatorSettings _settings;
 
-    public ChangeEventListen(
+    public ChangeSetListener(
         ILogger logger,
         ValidatorSettings settings)
     {
@@ -25,7 +25,7 @@ public class ChangeEventListen
         _settings = settings;
     }
 
-    public ChannelReader<IReadOnlyCollection<ChangeEvent>> Start(CancellationToken token = default)
+    public ChannelReader<IReadOnlyCollection<DataEvent>> Start(CancellationToken token = default)
     {
         var versionChangeCh = VersionChangeCh(token);
         var changeEventCh = ChangeEventCh(versionChangeCh);
@@ -88,10 +88,10 @@ public class ChangeEventListen
         return versionChangeCh.Reader;
     }
 
-    private ChannelReader<IReadOnlyCollection<ChangeEvent>> ChangeEventCh(
+    private ChannelReader<IReadOnlyCollection<DataEvent>> ChangeEventCh(
         ChannelReader<ChangeRow> versionsCh)
     {
-        var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<ChangeEvent>>();
+        var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<DataEvent>>();
         _ = Task.Factory.StartNew<Task>(async () =>
         {
             await foreach (var versionUpdate in versionsCh.ReadAllAsync())
@@ -99,7 +99,7 @@ public class ChangeEventListen
                 try
                 {
                     var stateId = (long)versionUpdate.Fields["state_id"];
-                    var changeEvents = new List<ChangeEvent>();
+                    var changeEvents = new List<DataEvent>();
                     foreach (var table in _settings.TableWatches)
                     {
                         var addedTask = RetrieveRowAdd(table.AddTable, stateId);
@@ -108,7 +108,7 @@ public class ChangeEventListen
                         var changes = (await Task.WhenAll(addedTask, deletedTask))
                             .SelectMany(x => x)
                             .GroupBy(x => x.ObjectId)
-                            .Select(x => new ChangeSet(
+                            .Select(x => new ArcgisChangeSet(
                                         x.FirstOrDefault(y => y.TableName == table.AddTable),
                                         x.FirstOrDefault(y => y.TableName == table.DeleteTable)))
                             .Select(x => ChangeUtil.MapChangeEvent(x, table));
