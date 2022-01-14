@@ -31,9 +31,3 @@ dotnet test --filter Category=Unit
 ```sh
 dotnet test --filter Category=Integration
 ```
-
-## Overview image
-
-The overview image shows an example of how the library can be used.
-
-![Overview image](docs/overview.png)
