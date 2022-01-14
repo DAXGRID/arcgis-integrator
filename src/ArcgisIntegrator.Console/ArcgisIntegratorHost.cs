@@ -10,7 +10,6 @@ namespace ArcgisIntegrator.Console;
 public class ArcgisIntegratorHost : IHostedService
 {
     private ILogger<ArcgisIntegratorHost> _logger;
-    private CancellationTokenSource _cancellationTokenSource;
     private Settings _settings;
 
     public ArcgisIntegratorHost(
@@ -18,7 +17,6 @@ public class ArcgisIntegratorHost : IHostedService
         IOptions<Settings> settings)
     {
         _logger = logger;
-        _cancellationTokenSource = new CancellationTokenSource();
         _settings = settings.Value;
     }
 
@@ -44,7 +42,7 @@ public class ArcgisIntegratorHost : IHostedService
             }
 
             _logger.LogInformation("Starting listening for change events.");
-            var changeSetListenerCh = new ChangeSetListener(_logger, settings).Start(_cancellationTokenSource.Token);
+            var changeSetListenerCh = new ChangeSetListener(_logger, settings).Start(cancellationToken);
             await foreach (var changeEvents in changeSetListenerCh.ReadAllAsync())
             {
                 _logger.LogInformation(JsonSerializer.Serialize(changeEvents));
@@ -56,7 +54,6 @@ public class ArcgisIntegratorHost : IHostedService
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _cancellationTokenSource.Cancel();
         return Task.CompletedTask;
     }
 }
