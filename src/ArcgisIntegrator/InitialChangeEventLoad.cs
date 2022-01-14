@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Linq;
 using ArcgisIntegrator.Config;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
