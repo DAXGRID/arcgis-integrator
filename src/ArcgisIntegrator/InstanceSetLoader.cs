@@ -27,7 +27,7 @@ public class InstanceSetLoader
 
     private ChannelReader<DataEvent> LoadTableData(CancellationToken token = default)
     {
-        var initialLoadCh = Channel.CreateUnbounded<DataEvent>();
+        var instanceSetLoaderCh = Channel.CreateUnbounded<DataEvent>();
 
         var _ = Task.Factory.StartNew(async () =>
         {
@@ -45,13 +45,13 @@ public class InstanceSetLoader
                     await foreach (var sqlRow in ReadAllRows(connection, tableWatch.InitialTable))
                     {
                         var changeEvent = ChangeUtil.MapChangeEvent(new ArcgisChangeSet(sqlRow, null), tableWatch);
-                        await initialLoadCh.Writer.WriteAsync(changeEvent);
+                        await instanceSetLoaderCh.Writer.WriteAsync(changeEvent);
                     }
                 }
                 catch (OperationCanceledException)
                 {
                     _logger.LogInformation("Initial load channel cancelled using token.");
-                    initialLoadCh.Writer.Complete();
+                    instanceSetLoaderCh.Writer.Complete();
                 }
                 catch (Exception ex)
                 {
@@ -59,10 +59,10 @@ public class InstanceSetLoader
                 }
             }
 
-            initialLoadCh.Writer.Complete();
+            instanceSetLoaderCh.Writer.Complete();
         });
 
-        return initialLoadCh.Reader;
+        return instanceSetLoaderCh.Reader;
     }
 
     private async IAsyncEnumerable<SqlRow> ReadAllRows(SqlConnection connection, string tableName)
