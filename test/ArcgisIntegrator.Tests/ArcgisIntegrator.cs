@@ -28,13 +28,13 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     {
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-        var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
+        var tableWatches = new TableWatch[] { new TableWatch("dbo.cable", "dbo.a524", "dbo.D524") };
         var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
         var logger = A.Fake<ILogger>();
 
         // We insert 10 rows as initial dataset
         var objectIds = Enumerable.Range(0, 10).ToList();
-        objectIds.ForEach(async (x) => await InsertKabelTable(x));
+        objectIds.ForEach(async (x) => await InsertCableTable(x));
 
         var sut = new InstanceSetLoader(logger, settings);
         var initialLoadCh = sut.Start();
@@ -59,7 +59,7 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     {
         // We cancel after 40 sec in case of timeouts.
         var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
-        var tableWatches = new TableWatch[] { new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524") };
+        var tableWatches = new TableWatch[] { new TableWatch("dbo.cable", "dbo.a524", "dbo.D524") };
         var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
         var logger = A.Fake<ILogger>();
 
@@ -140,23 +140,23 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 
             // 5. Insert, update and delete
             var fifthChange = changes[4].ToArray();
-            fifthChange[0].Operation.Should().Be(Operation.Update);
+            fifthChange[0].Operation.Should().Be(Operation.Create);
             fifthChange[0].StateId.Should().Be(5);
-            fifthChange[0].ObjectId.Should().Be(20);
-            fifthChange[1].Operation.Should().Be(Operation.Create);
+            fifthChange[0].ObjectId.Should().Be(40);
+            fifthChange[1].Operation.Should().Be(Operation.Update);
             fifthChange[1].StateId.Should().Be(5);
-            fifthChange[1].ObjectId.Should().Be(40);
+            fifthChange[1].ObjectId.Should().Be(20);
             fifthChange[2].Operation.Should().Be(Operation.Delete);
             fifthChange[2].StateId.Should().Be(5);
             fifthChange[2].ObjectId.Should().Be(30);
         }
     }
 
-    private async Task InsertKabelTable(int objectId)
+    private async Task InsertCableTable(int objectId)
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dataadmin.KABEL (OBJECTID)
+        var sql = @"INSERT INTO dbo.cable (OBJECTID)
                     VALUES(@object_id);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
@@ -185,7 +185,7 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dataadmin.a524
+        var sql = @"INSERT INTO dbo.a524
                     (OBJECTID,
                      SDE_STATE_ID)
                      VALUES(@object_id, @state_id);";
@@ -199,7 +199,7 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     {
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dataadmin.D524
+        var sql = @"INSERT INTO dbo.D524
                     (SDE_DELETES_ROW_ID,
                      SDE_STATE_ID,
                      DELETED_AT)

@@ -9,7 +9,7 @@ public class ChangeUtilTests
 {
     private TableWatch CreateTableWatchDefault()
     {
-        return new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524");
+        return new TableWatch("dbo.cable", "dbo.a524", "dbo.D524");
     }
 
     [Fact]
