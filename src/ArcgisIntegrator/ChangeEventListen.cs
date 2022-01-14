@@ -32,9 +32,9 @@ public class ChangeEventListen
         return changeEventCh;
     }
 
-    private ChannelReader<ChangeRow<dynamic>> VersionChangeCh(CancellationToken token)
+    private ChannelReader<ChangeRow> VersionChangeCh(CancellationToken token)
     {
-        var versionChangeCh = Channel.CreateUnbounded<ChangeRow<dynamic>>();
+        var versionChangeCh = Channel.CreateUnbounded<ChangeRow>();
         _ = Task.Factory.StartNew<Task>(async () =>
         {
             var lowBoundLsn = new BigInteger(-1);
@@ -88,7 +88,7 @@ public class ChangeEventListen
     }
 
     private ChannelReader<IReadOnlyCollection<ChangeEvent>> ChangeEventCh(
-        ChannelReader<ChangeRow<dynamic>> versionsCh)
+        ChannelReader<ChangeRow> versionsCh)
     {
         var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<ChangeEvent>>();
         _ = Task.Factory.StartNew<Task>(async () =>
@@ -97,7 +97,7 @@ public class ChangeEventListen
             {
                 try
                 {
-                    long stateId = versionUpdate.Body.state_id;
+                    var stateId = (long)versionUpdate.Fields["state_id"];
                     var changeEvents = new List<ChangeEvent>();
                     foreach (var table in _settings.TableWatches)
                     {
