@@ -30,23 +30,32 @@ public class InitialChangeEventLoad
     {
         var initialLoadCh = Channel.CreateUnbounded<ChangeEvent>();
 
-        var _ = Task.Factory.StartNew(() =>
+        var _ = Task.Factory.StartNew(async () =>
         {
-            _settings.TableWatches.ToList().ForEach(async (tableWatch) =>
+            foreach (var tableWatch in _settings.TableWatches)
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
+
                     await foreach (var sqlRow in ReadAllRows(tableWatch.InitialTable))
                     {
                         var changeEvent = ChangeUtil.MapChangeEvent(new ChangeSet(sqlRow, null), tableWatch);
-                        await initialLoadCh.Writer.WriteAsync(changeEvent, token);
+                        await initialLoadCh.Writer.WriteAsync(changeEvent);
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("Initial load channel cancelled using token.");
+                    initialLoadCh.Writer.Complete();
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex.Message, ex.StackTrace);
                 }
-            });
+            }
+
+            initialLoadCh.Writer.Complete();
         });
 
         return initialLoadCh.Reader;

@@ -40,14 +40,10 @@ public class DataValidatorTests : IClassFixture<DatabaseFixture>
         var initialLoadCh = sut.Start();
 
         var result = new List<ChangeEvent>();
-        for (var i = 0; i < 10; i++)
+        await foreach (var changeEvent in initialLoadCh.ReadAllAsync())
         {
-            var changeEvent = await initialLoadCh.ReadAsync(cTokenSource.Token);
             result.Add(changeEvent);
         }
-
-        // We close the channels since we're done consuming.
-        cTokenSource.Cancel();
 
         using (new AssertionScope())
         {
