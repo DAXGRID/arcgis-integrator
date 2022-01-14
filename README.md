@@ -1,6 +1,12 @@
 # Arcgis integrator
 
-## Publish console app local directory for Windows x64
+## Example
+
+Example can be found [here.](https://github.com/DAXGRID/arcgis-integrator/tree/master/src/ArcgisIntegrator.Console)
+
+## Publish example app
+
+Example publishing to win-x64.
 
 ```sh
 dotnet publish src/ArcgisIntegrator.Console/ArcgisIntegrator.Console.csproj --sc --runtime win-x64 -o ./publish
