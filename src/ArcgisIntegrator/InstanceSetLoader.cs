@@ -37,7 +37,12 @@ public class InstanceSetLoader
                 {
                     token.ThrowIfCancellationRequested();
 
-                    await foreach (var sqlRow in ReadAllRows(tableWatch.InitialTable))
+                    // We share the same connection between all tables
+                    // to make sure that we don't read different 'timelines'.
+                    using var connection = new SqlConnection(_settings.ConnectionString);
+                    await connection.OpenAsync();
+
+                    await foreach (var sqlRow in ReadAllRows(connection, tableWatch.InitialTable))
                     {
                         var changeEvent = ChangeUtil.MapChangeEvent(new ArcgisChangeSet(sqlRow, null), tableWatch);
                         await initialLoadCh.Writer.WriteAsync(changeEvent);
@@ -60,11 +65,8 @@ public class InstanceSetLoader
         return initialLoadCh.Reader;
     }
 
-    private async IAsyncEnumerable<SqlRow> ReadAllRows(string tableName)
+    private async IAsyncEnumerable<SqlRow> ReadAllRows(SqlConnection connection, string tableName)
     {
-        using var connection = new SqlConnection(_settings.ConnectionString);
-        await connection.OpenAsync();
-
         var sql = $"SELECT * FROM {tableName}";
         using var cmd = new SqlCommand(sql, connection);
 
