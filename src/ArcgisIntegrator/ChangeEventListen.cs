@@ -55,14 +55,15 @@ public class ChangeEventListen
                     // If the highbound lsn has changed there might be a change to the table.
                     if (lowBoundLsn <= highBoundLsn)
                     {
-                        (await Cdc.GetAllChanges(connection,
-                                                 _settings.VersionTableName,
-                                                 lowBoundLsn,
-                                                 highBoundLsn,
-                                                 AllChangesRowFilterOption.All))
-                            .OrderBy(x => x.SequenceValue)
-                            .ToList()
-                            .ForEach(async (x) => await versionChangeCh.Writer.WriteAsync(x));
+                        var changes = await Cdc.GetAllChanges(
+                            connection,
+                            _settings.VersionTableName,
+                            lowBoundLsn,
+                            highBoundLsn,
+                            AllChangesRowFilterOption.All);
+
+                        foreach (var change in changes.OrderBy(x => x.SequenceValue))
+                            await versionChangeCh.Writer.WriteAsync(change);
 
                         lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn);
                     }
