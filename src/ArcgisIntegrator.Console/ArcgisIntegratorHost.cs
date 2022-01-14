@@ -28,7 +28,7 @@ public class ArcgisIntegratorHost : IHostedService
 
         var tableWatches = new TableWatch[]
         {
-            new TableWatch("dataadmin.KABEL", "dataadmin.a524", "dataadmin.D524")
+            new TableWatch("dbo.cable", "dbo.a524", "dbo.D524")
         };
 
         var settings = new ValidatorSettings(

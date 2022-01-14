@@ -13,7 +13,7 @@ public class DatabaseFixture : IDisposable
 
     public DatabaseFixture()
     {
-        ConnectionString = CreateConnectionString("DATA1");
+        ConnectionString = CreateConnectionString("SUPERGIS");
         DeleteDatabase();
         SetupDatabase();
 
@@ -41,10 +41,10 @@ public class DatabaseFixture : IDisposable
     {
         using var connection = new SqlConnection(CreateConnectionString("master"));
         connection.Open();
-        var deleteDatabaseSql = @"IF DB_ID('DATA1') IS NOT NULL
+        var deleteDatabaseSql = @"IF DB_ID('SUPERGIS') IS NOT NULL
                                   BEGIN
-                                    ALTER DATABASE DATA1 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                                    DROP DATABASE DATA1;
+                                    ALTER DATABASE SUPERGIS SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                                    DROP DATABASE SUPERGIS;
                                   END;";
         using var cmd = new SqlCommand(deleteDatabaseSql, connection);
         cmd.ExecuteNonQuery();
