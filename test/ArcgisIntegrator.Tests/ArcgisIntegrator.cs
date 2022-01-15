@@ -154,10 +154,12 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 
     private async Task InsertCableTable(int objectId)
     {
+        var sql = @"
+            INSERT INTO [dbo].[cable] ([OBJECTID])
+            VALUES(@object_id)";
+
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dbo.cable (OBJECTID)
-                    VALUES(@object_id);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         await cmd.ExecuteNonQueryAsync();
@@ -165,11 +167,13 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 
     private async Task UpdateVersionStateId(int stateId)
     {
+        var sql = @"
+            UPDATE [sde].[SDE_versions]
+            SET [state_id] = @state_id
+            WHERE [version_id] = 1";
+
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"UPDATE sde.SDE_versions
-                    SET state_id = @state_id
-                    WHERE version_id = 1;";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@state_id", stateId);
         await cmd.ExecuteNonQueryAsync();
@@ -183,12 +187,12 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 
     private async Task Insert524(int objectId, int stateId)
     {
+        var sql = @"
+            INSERT INTO [dbo].[a524] ([OBJECTID], [SDE_STATE_ID])
+            VALUES(@object_id, @state_id)";
+
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dbo.a524
-                    (OBJECTID,
-                     SDE_STATE_ID)
-                     VALUES(@object_id, @state_id);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);
@@ -197,13 +201,12 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 
     private async Task Delete524(int objectId, int stateId)
     {
+        var sql = @"
+            INSERT INTO [dbo].[D524] ([SDE_DELETES_ROW_ID], [SDE_STATE_ID], [DELETED_AT])
+            VALUES(@object_id, 0, @state_id)";
+
         using var connection = new SqlConnection(_databaseFixture.ConnectionString);
         await connection.OpenAsync();
-        var sql = @"INSERT INTO dbo.D524
-                    (SDE_DELETES_ROW_ID,
-                     SDE_STATE_ID,
-                     DELETED_AT)
-                     VALUES(@object_id, 0, @state_id);";
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         cmd.Parameters.AddWithValue("@state_id", stateId);
