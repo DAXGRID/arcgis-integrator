@@ -7,25 +7,18 @@ using Microsoft.SqlServer.Management.Smo;
 
 namespace ArcgisIntegrator.Tests;
 
-public class DatabaseFixture : IDisposable
+public class DatabaseFixture
 {
-    public string ConnectionString { get; init; }
+    public string ConnectionString => CreateConnectionString("SUPERGIS");
 
     public DatabaseFixture()
     {
-        ConnectionString = CreateConnectionString("SUPERGIS");
         DeleteDatabase();
         SetupDatabase();
 
         // We do this because the setup process is quite intensive for the SQL database.
-        // So before it can be used in tests, we want to make sure that the CDC tables are ready
-        // to be consumed.
-        Thread.Sleep(10000);
-    }
-
-    public void Dispose()
-    {
-        DeleteDatabase();
+        // So before it can be used in tests, we want to make sure that the CDC tables are ready to be consumed.
+        Thread.Sleep(2000);
     }
 
     private void SetupDatabase()
@@ -39,13 +32,15 @@ public class DatabaseFixture : IDisposable
 
     private void DeleteDatabase()
     {
+        var deleteDatabaseSql = @"
+          IF DB_ID('SUPERGIS') IS NOT NULL
+            BEGIN
+              ALTER DATABASE SUPERGIS SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+              DROP DATABASE SUPERGIS;
+          END;";
+
         using var connection = new SqlConnection(CreateConnectionString("master"));
         connection.Open();
-        var deleteDatabaseSql = @"IF DB_ID('SUPERGIS') IS NOT NULL
-                                  BEGIN
-                                    ALTER DATABASE SUPERGIS SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                                    DROP DATABASE SUPERGIS;
-                                  END;";
         using var cmd = new SqlCommand(deleteDatabaseSql, connection);
         cmd.ExecuteNonQuery();
     }
