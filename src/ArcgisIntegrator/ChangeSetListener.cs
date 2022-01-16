@@ -32,9 +32,9 @@ public class ChangeSetListener
         return changeEventCh;
     }
 
-    private ChannelReader<ChangeRow> VersionChangeCh(CancellationToken token)
+    private ChannelReader<AllChangeRow> VersionChangeCh(CancellationToken token)
     {
-        var versionChangeCh = Channel.CreateUnbounded<ChangeRow>();
+        var versionChangeCh = Channel.CreateUnbounded<AllChangeRow>();
         _ = Task.Factory.StartNew<Task>(async () =>
         {
             var lowBoundLsn = new BigInteger(-1);
@@ -88,8 +88,7 @@ public class ChangeSetListener
         return versionChangeCh.Reader;
     }
 
-    private ChannelReader<IReadOnlyCollection<DataEvent>> ChangeEventCh(
-        ChannelReader<ChangeRow> versionsCh)
+    private ChannelReader<IReadOnlyCollection<DataEvent>> ChangeEventCh(ChannelReader<AllChangeRow> versionsCh)
     {
         var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<DataEvent>>();
         _ = Task.Factory.StartNew<Task>(async () =>
