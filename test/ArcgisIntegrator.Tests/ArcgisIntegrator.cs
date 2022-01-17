@@ -109,47 +109,53 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
         // We close the channels since we're done consuming.
         cTokenSource.Cancel();
 
-        using (new AssertionScope())
-        {
-            // 1. Insert
-            var firstChange = changes[0].ToArray();
-            firstChange[0].Operation.Should().Be(Operation.Create);
-            firstChange[0].StateId.Should().Be(1);
-            firstChange[0].ObjectId.Should().Be(10);
-
-            // 2. Update
-            var secondChange = changes[1].ToArray();
-            secondChange[0].Operation.Should().Be(Operation.Update);
-            secondChange[0].StateId.Should().Be(2);
-            secondChange[0].ObjectId.Should().Be(10);
-
-            // 3. Delete
-            var thirdChange = changes[2].ToArray();
-            thirdChange[0].Operation.Should().Be(Operation.Delete);
-            thirdChange[0].StateId.Should().Be(3);
-            thirdChange[0].ObjectId.Should().Be(10);
-
-            // 4. Insert multiple
-            var fourthChange = changes[3].ToArray();
-            fourthChange[0].Operation.Should().Be(Operation.Create);
-            fourthChange[0].StateId.Should().Be(4);
-            fourthChange[0].ObjectId.Should().Be(20);
-            fourthChange[1].Operation.Should().Be(Operation.Create);
-            fourthChange[1].StateId.Should().Be(4);
-            fourthChange[1].ObjectId.Should().Be(30);
-
-            // 5. Insert, update and delete
-            var fifthChange = changes[4].ToArray();
-            fifthChange[0].Operation.Should().Be(Operation.Create);
-            fifthChange[0].StateId.Should().Be(5);
-            fifthChange[0].ObjectId.Should().Be(40);
-            fifthChange[1].Operation.Should().Be(Operation.Update);
-            fifthChange[1].StateId.Should().Be(5);
-            fifthChange[1].ObjectId.Should().Be(20);
-            fifthChange[2].Operation.Should().Be(Operation.Delete);
-            fifthChange[2].StateId.Should().Be(5);
-            fifthChange[2].ObjectId.Should().Be(30);
-        }
+        changes.Should()
+            .SatisfyRespectively(
+                first =>
+                {
+                    var firstChange = first.ToArray();
+                    firstChange[0].Operation.Should().Be(Operation.Create);
+                    firstChange[0].StateId.Should().Be(1);
+                    firstChange[0].ObjectId.Should().Be(10);
+                },
+                second =>
+                {
+                    var secondChange = second.ToArray();
+                    secondChange[0].Operation.Should().Be(Operation.Update);
+                    secondChange[0].StateId.Should().Be(2);
+                    secondChange[0].ObjectId.Should().Be(10);
+                },
+                third =>
+                {
+                    var thirdChange = third.ToArray();
+                    thirdChange[0].Operation.Should().Be(Operation.Delete);
+                    thirdChange[0].StateId.Should().Be(3);
+                    thirdChange[0].ObjectId.Should().Be(10);
+                },
+                fourth =>
+                {
+                    var fourthChange = fourth.ToArray();
+                    fourthChange[0].Operation.Should().Be(Operation.Create);
+                    fourthChange[0].StateId.Should().Be(4);
+                    fourthChange[0].ObjectId.Should().Be(20);
+                    fourthChange[1].Operation.Should().Be(Operation.Create);
+                    fourthChange[1].StateId.Should().Be(4);
+                    fourthChange[1].ObjectId.Should().Be(30);
+                },
+                fifth =>
+                {
+                    var fifthChange = fifth.ToArray();
+                    fifthChange[0].Operation.Should().Be(Operation.Create);
+                    fifthChange[0].StateId.Should().Be(5);
+                    fifthChange[0].ObjectId.Should().Be(40);
+                    fifthChange[1].Operation.Should().Be(Operation.Update);
+                    fifthChange[1].StateId.Should().Be(5);
+                    fifthChange[1].ObjectId.Should().Be(20);
+                    fifthChange[2].Operation.Should().Be(Operation.Delete);
+                    fifthChange[2].StateId.Should().Be(5);
+                    fifthChange[2].ObjectId.Should().Be(30);
+                }
+            );
     }
 
     private async Task InsertCableTable(int objectId)
