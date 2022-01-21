@@ -14,6 +14,7 @@ CREATE TABLE [dbo].[cable](
 	[psr_type] [varchar](255) NULL,
 	[manufactuer_id] [uniqueidentifier] NULL,
 	[manufactuer_name] [varchar](255) NULL,
+    [shape] [geometry] NULL,
 	[product_asset_model_id] [uniqueidentifier] NULL);
 GO
 
@@ -25,6 +26,7 @@ CREATE TABLE [dbo].[a524](
 	[psr_type] [varchar](255) NULL,
 	[manufactuer_id] [uniqueidentifier] NULL,
 	[manufactuer_name] [varchar](255) NULL,
+    [shape] [geometry] NULL,
 	[product_asset_model_id] [uniqueidentifier] NULL);
 GO
 

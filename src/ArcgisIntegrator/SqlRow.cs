@@ -10,7 +10,7 @@ internal record SqlRow
     public int ObjectId =>
         (int?)Fields.GetValueOrDefault("OBJECTID") ??
         (int?)Fields.GetValueOrDefault("SDE_DELETES_ROW_ID") ??
-        throw new Exception($"Could not get ObjectId from {nameof(SqlRow)}.");
+        throw new ArgumentException(nameof(SqlRow), $"Could not get ObjectId.");
 
     public SqlRow(string tableName, IReadOnlyDictionary<string, object> fields)
     {

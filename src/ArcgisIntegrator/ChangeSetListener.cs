@@ -1,6 +1,5 @@
 using ArcgisIntegrator.Config;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using MsSqlCdc;
 using System;
 using System.Collections.Generic;
@@ -14,14 +13,10 @@ namespace ArcgisIntegrator;
 
 public class ChangeSetListener
 {
-    private readonly ILogger _logger;
     private readonly ValidatorSettings _settings;
 
-    public ChangeSetListener(
-        ILogger logger,
-        ValidatorSettings settings)
+    public ChangeSetListener(ValidatorSettings settings)
     {
-        _logger = logger;
         _settings = settings;
     }
 
@@ -35,7 +30,7 @@ public class ChangeSetListener
     private ChannelReader<AllChangeRow> VersionChangeCh(CancellationToken token)
     {
         var versionChangeCh = Channel.CreateUnbounded<AllChangeRow>();
-        _ = Task.Factory.StartNew<Task>(async () =>
+        _ = Task.Run(async () =>
         {
             var lowBoundLsn = new BigInteger(-1);
             while (true)
@@ -45,12 +40,12 @@ public class ChangeSetListener
                     token.ThrowIfCancellationRequested();
 
                     if (lowBoundLsn == -1)
-                        lowBoundLsn = await GetStartLsn();
+                        lowBoundLsn = await GetStartLsn().ConfigureAwait(false);
 
                     using var connection = new SqlConnection(_settings.ConnectionString);
-                    await connection.OpenAsync();
+                    await connection.OpenAsync().ConfigureAwait(false);
 
-                    var highBoundLsn = await Cdc.GetMaxLsn(connection);
+                    var highBoundLsn = await Cdc.GetMaxLsn(connection).ConfigureAwait(false);
 
                     // If the highbound lsn has changed there might be a change to the table.
                     if (lowBoundLsn <= highBoundLsn)
@@ -60,30 +55,25 @@ public class ChangeSetListener
                             _settings.VersionTableName,
                             lowBoundLsn,
                             highBoundLsn,
-                            AllChangesRowFilterOption.All);
+                            AllChangesRowFilterOption.All).ConfigureAwait(false);
 
                         foreach (var change in changes.OrderBy(x => x.SequenceValue))
-                            await versionChangeCh.Writer.WriteAsync(change);
+                            await versionChangeCh.Writer.WriteAsync(change).ConfigureAwait(false);
 
-                        lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn);
+                        lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("ChangeRow channel cancelled using token.");
                     versionChangeCh.Writer.Complete();
                     break;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message, ex);
-                }
                 finally
                 {
-                    await Task.Delay(_settings.PollingIntervalMs);
+                    await Task.Delay(_settings.PollingIntervalMs).ConfigureAwait(false);
                 }
             }
-        });
+        }, token).ConfigureAwait(false);
 
         return versionChangeCh.Reader;
     }
@@ -91,36 +81,29 @@ public class ChangeSetListener
     private ChannelReader<IReadOnlyCollection<DataEvent>> ChangeEventCh(ChannelReader<AllChangeRow> versionsCh)
     {
         var changeEventCh = Channel.CreateUnbounded<IReadOnlyCollection<DataEvent>>();
-        _ = Task.Factory.StartNew<Task>(async () =>
+        _ = Task.Run(async () =>
         {
             await foreach (var versionUpdate in versionsCh.ReadAllAsync())
             {
-                try
+                var stateId = (long)versionUpdate.Fields["state_id"];
+                var changeEvents = new List<DataEvent>();
+                foreach (var table in _settings.TableWatches)
                 {
-                    var stateId = (long)versionUpdate.Fields["state_id"];
-                    var changeEvents = new List<DataEvent>();
-                    foreach (var table in _settings.TableWatches)
-                    {
-                        var addedTask = RetrieveRowAdd(table.AddTable, stateId);
-                        var deletedTask = RetrieveRowDelete(table.DeleteTable, stateId);
+                    var addedTask = RetrieveRowAdd(table.AddTable, stateId);
+                    var deletedTask = RetrieveRowDelete(table.DeleteTable, stateId);
 
-                        var changes = (await Task.WhenAll(addedTask, deletedTask))
-                            .SelectMany(x => x)
-                            .GroupBy(x => x.ObjectId)
-                            .Select(x => new ArcgisChangeSet(
-                                        x.FirstOrDefault(y => y.TableName == table.AddTable),
-                                        x.FirstOrDefault(y => y.TableName == table.DeleteTable)))
-                            .Select(x => ChangeUtil.MapChangeEvent(x, table));
+                    var changes = (await Task.WhenAll(addedTask, deletedTask).ConfigureAwait(false))
+                        .SelectMany(x => x)
+                        .GroupBy(x => x.ObjectId)
+                        .Select(x => new ArcgisChangeSet(
+                                    x.FirstOrDefault(y => y.TableName == table.AddTable),
+                                    x.FirstOrDefault(y => y.TableName == table.DeleteTable)))
+                        .Select(x => ChangeUtil.MapChangeEvent(x, table));
 
-                        changeEvents.AddRange(changes);
-                    }
-
-                    await changeEventCh.Writer.WriteAsync(changeEvents);
+                    changeEvents.AddRange(changes);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message, ex);
-                }
+
+                await changeEventCh.Writer.WriteAsync(changeEvents).ConfigureAwait(false);
             }
 
             changeEventCh.Writer.Complete();
@@ -129,25 +112,29 @@ public class ChangeSetListener
         return changeEventCh;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage
+    ("Security", "CA2100:Review SQL queries for security vulnerabilities",
+     Justification = "The value is supplied doing configuration.")]
     private async Task<List<SqlRow>> RetrieveRowAdd(string tableName, long stateId)
     {
-        using var connection = new SqlConnection(_settings.ConnectionString);
-        await connection.OpenAsync();
-
         var sql = $@"SELECT *
                      FROM {tableName}
                      WHERE SDE_STATE_ID = @state_id";
+
+        using var connection = new SqlConnection(_settings.ConnectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
         using var cmd = new SqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("@state_id", stateId);
+        _ = cmd.Parameters.AddWithValue("@state_id", stateId);
 
         var sqlRowList = new List<SqlRow>();
-        using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        while (await reader.ReadAsync().ConfigureAwait(false))
         {
             var fields = new Dictionary<string, object>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                if (!reader.GetDataTypeName(i).Contains("geometry"))
+                if (!reader.GetDataTypeName(i).Contains("geometry", StringComparison.OrdinalIgnoreCase))
                     fields.Add(reader.GetName(i), reader.GetValue(i));
             }
 
@@ -157,25 +144,29 @@ public class ChangeSetListener
         return sqlRowList;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage
+    ("Security", "CA2100:Review SQL queries for security vulnerabilities",
+     Justification = "The value is supplied doing configuration.")]
     private async Task<List<SqlRow>> RetrieveRowDelete(string tableName, long stateId)
     {
-        using var connection = new SqlConnection(_settings.ConnectionString);
-        await connection.OpenAsync();
-
         var sql = $@"SELECT *
                      FROM {tableName}
                      WHERE SDE_STATE_ID = 0 AND DELETED_AT = @state_id";
+
+        using var connection = new SqlConnection(_settings.ConnectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
         using var cmd = new SqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("@state_id", stateId);
+        _ = cmd.Parameters.AddWithValue("@state_id", stateId);
 
         var sqlRowList = new List<SqlRow>();
-        using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        while (await reader.ReadAsync().ConfigureAwait(false))
         {
             var fields = new Dictionary<string, object>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                if (!reader.GetDataTypeName(i).Contains("geometry"))
+                if (!reader.GetDataTypeName(i).Contains("geometry", StringComparison.OrdinalIgnoreCase))
                     fields.Add(reader.GetName(i), reader.GetValue(i));
             }
 
@@ -188,8 +179,8 @@ public class ChangeSetListener
     private async Task<BigInteger> GetStartLsn()
     {
         using var connection = new SqlConnection(_settings.ConnectionString);
-        await connection.OpenAsync();
-        var currentMaxLsn = await Cdc.GetMaxLsn(connection);
-        return await Cdc.GetNextLsn(connection, currentMaxLsn);
+        await connection.OpenAsync().ConfigureAwait(false);
+        var currentMaxLsn = await Cdc.GetMaxLsn(connection).ConfigureAwait(false);
+        return await Cdc.GetNextLsn(connection, currentMaxLsn).ConfigureAwait(false);
     }
 }

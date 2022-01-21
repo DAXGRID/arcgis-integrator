@@ -7,9 +7,9 @@ using System.Threading;
 
 namespace ArcgisIntegrator.Tests;
 
-public class DatabaseFixture
+internal class DatabaseFixture
 {
-    public string ConnectionString => CreateConnectionString("SUPERGIS");
+    public static string ConnectionString => CreateConnectionString("SUPERGIS");
 
     public DatabaseFixture()
     {
@@ -21,7 +21,7 @@ public class DatabaseFixture
         Thread.Sleep(2000);
     }
 
-    private void SetupDatabase()
+    private static void SetupDatabase()
     {
         using var connection = new SqlConnection(CreateConnectionString("master"));
         connection.Open();
@@ -30,7 +30,7 @@ public class DatabaseFixture
         server.ConnectionContext.ExecuteNonQuery(setupSql);
     }
 
-    private void DeleteDatabase()
+    private static void DeleteDatabase()
     {
         var deleteDatabaseSql = @"
           IF DB_ID('SUPERGIS') IS NOT NULL
@@ -51,20 +51,18 @@ public class DatabaseFixture
             ? filePath
             : Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath);
 
-        if (!File.Exists(absolutePath))
-            throw new ArgumentException($"Could not find file at path: {absolutePath}");
-
-        return absolutePath;
+        return File.Exists(absolutePath)
+            ? absolutePath
+            : throw new ArgumentException($"Could not find file at path: {absolutePath}");
     }
 
     private static string CreateConnectionString(string initialCatalog)
-    {
-        var builder = new SqlConnectionStringBuilder();
-        builder.DataSource = "localhost";
-        builder.UserID = "sa";
-        builder.Password = "myAwesomePassword1";
-        builder.InitialCatalog = initialCatalog;
-        builder.Encrypt = false;
-        return builder.ConnectionString;
-    }
+        => new SqlConnectionStringBuilder()
+        {
+            DataSource = "localhost",
+            UserID = "sa",
+            Password = "myAwesomePassword1",
+            InitialCatalog = initialCatalog,
+            Encrypt = false,
+        }.ToString();
 }
