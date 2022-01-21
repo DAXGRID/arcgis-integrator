@@ -1,5 +1,7 @@
 # Arcgis integrator
 
+Enables easy integration to change data capture for Arcgis on a MS-SQL database.
+
 You can get the NuGet package [here.](https://www.nuget.org/packages/DAX.ArcgisIntegrator/)
 
 ## Examples
