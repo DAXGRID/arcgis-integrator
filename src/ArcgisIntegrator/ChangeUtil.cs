@@ -1,6 +1,5 @@
 using ArcgisIntegrator.Config;
 using System;
-using System.Collections.Generic;
 
 namespace ArcgisIntegrator;
 
@@ -10,26 +9,25 @@ internal static class ChangeUtil
     {
         var operation = GetOperation(changeSet);
 
-        IReadOnlyDictionary<string, object> fields;
+        DataEvent? dataEvent = null;
         if (operation == Operation.Delete && changeSet.Delete is not null)
-            fields = changeSet.Delete.Fields;
+            dataEvent = new DataEvent(tableWatch, changeSet.Delete.Fields, operation);
         else if (operation != Operation.Delete && changeSet.Add is not null)
-            fields = changeSet.Add.Fields;
-        else
-            throw new ArgumentException("Both Add and Delete in changeset cannot be null at the same time");
+            dataEvent = new DataEvent(tableWatch, changeSet.Add.Fields, operation);
 
-        return new DataEvent(tableWatch, fields, operation);
+        return dataEvent ??
+            throw new ArgumentException("Both Add and Delete cannot be null at the same time.", nameof(changeSet));
     }
 
     private static Operation GetOperation(ArcgisChangeSet changeSet)
     {
-        if (changeSet.Add is not null && changeSet.Delete is null)
-            return Operation.Create;
-        else if (changeSet.Add is not null && changeSet.Delete is not null)
-            return Operation.Update;
-        else if (changeSet.Add is null && changeSet.Delete is not null)
+        var isAddOrUpdate = changeSet.Add is not null;
+        var isDelete = changeSet.Delete is not null;
+        if (isAddOrUpdate)
+            return changeSet.Delete is null ? Operation.Create : Operation.Update;
+        else if (isDelete)
             return Operation.Delete;
-        else
-            throw new Exception($"Could not convert {nameof(ArcgisChangeSet)} to {nameof(Operation)}");
+
+        throw new ArgumentException($"Could not convert to {nameof(Operation)}", nameof(changeSet));
     }
 }

@@ -1,6 +1,5 @@
 using ArcgisIntegrator.Config;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,25 +10,20 @@ namespace ArcgisIntegrator;
 
 public class InstanceSetLoader
 {
-    private ValidatorSettings _settings;
-    private ILogger _logger;
+    private readonly ValidatorSettings _settings;
 
-    public InstanceSetLoader(ILogger logger, ValidatorSettings settings)
+    public InstanceSetLoader(ValidatorSettings settings)
     {
-        _logger = logger;
         _settings = settings;
     }
 
-    public ChannelReader<DataEvent> Start(CancellationToken token = default)
-    {
-        return LoadTableData();
-    }
+    public ChannelReader<DataEvent> Start(CancellationToken token = default) => LoadTableData(token);
 
     private ChannelReader<DataEvent> LoadTableData(CancellationToken token = default)
     {
         var instanceSetLoaderCh = Channel.CreateUnbounded<DataEvent>();
 
-        var _ = Task.Factory.StartNew(async () =>
+        _ = Task.Run(async () =>
         {
             foreach (var tableWatch in _settings.TableWatches)
             {
@@ -40,43 +34,40 @@ public class InstanceSetLoader
                     // We share the same connection between all tables
                     // to make sure that we don't read different 'timelines'.
                     using var connection = new SqlConnection(_settings.ConnectionString);
-                    await connection.OpenAsync();
-
-                    await foreach (var sqlRow in ReadAllRows(connection, tableWatch.InitialTable))
+                    await connection.OpenAsync().ConfigureAwait(false);
+                    await foreach (var sqlRow in ReadAllRows(connection, tableWatch.InitialTable).ConfigureAwait(false))
                     {
                         var changeEvent = ChangeUtil.MapChangeEvent(new ArcgisChangeSet(sqlRow, null), tableWatch);
-                        await instanceSetLoaderCh.Writer.WriteAsync(changeEvent);
+                        await instanceSetLoaderCh.Writer.WriteAsync(changeEvent).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("Initial load channel cancelled using token.");
                     instanceSetLoaderCh.Writer.Complete();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message, ex.StackTrace);
                 }
             }
 
             instanceSetLoaderCh.Writer.Complete();
-        });
+        }, token);
 
         return instanceSetLoaderCh.Reader;
     }
 
-    private async IAsyncEnumerable<SqlRow> ReadAllRows(SqlConnection connection, string tableName)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage
+    ("Security", "CA2100:Review SQL queries for security vulnerabilities",
+     Justification = "The value is supplied doing configuration.")]
+    private static async IAsyncEnumerable<SqlRow> ReadAllRows(SqlConnection connection, string tableName)
     {
         var sql = $"SELECT * FROM {tableName}";
         using var cmd = new SqlCommand(sql, connection);
 
-        using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        while (await reader.ReadAsync().ConfigureAwait(false))
         {
             var fields = new Dictionary<string, object>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                if (!reader.GetDataTypeName(i).Contains("geometry"))
+                if (!reader.GetDataTypeName(i).Contains("geometry", StringComparison.CurrentCultureIgnoreCase))
                     fields.Add(reader.GetName(i), reader.GetValue(i));
             }
 

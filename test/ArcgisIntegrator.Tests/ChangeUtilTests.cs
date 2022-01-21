@@ -7,10 +7,7 @@ namespace ArcgisIntegrator.Tests;
 
 public class ChangeUtilTests
 {
-    private TableWatch CreateTableWatchDefault()
-    {
-        return new TableWatch("dbo.cable", "dbo.a524", "dbo.D524");
-    }
+    private static TableWatch CreateTableWatchDefault() => new("dbo.cable", "dbo.a524", "dbo.D524");
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -69,7 +66,6 @@ public class ChangeUtilTests
     public void Delete_operation_change_event_mapped()
     {
         var tables = CreateTableWatchDefault();
-        var added = new List<(string fieldName, object fieldValue)>();
         var deleted = new Dictionary<string, object>
         {
             {"SDE_DELETES_ROW_ID", 10},

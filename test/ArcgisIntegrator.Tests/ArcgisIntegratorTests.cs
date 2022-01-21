@@ -1,9 +1,7 @@
 using ArcgisIntegrator.Config;
-using FakeItEasy;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,28 +13,20 @@ namespace ArcgisIntegrator.Tests;
 
 public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
 {
-    private readonly DatabaseFixture _databaseFixture;
-
-    public ArcgisIntegratorTests(DatabaseFixture databaseFixture)
-    {
-        _databaseFixture = databaseFixture;
-    }
-
     [Fact]
     [Trait("Category", "Integration")]
     public async Task Receive_initial_instance_set()
     {
         // We cancel after 40 sec in case of timeouts.
-        var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var tableWatches = new TableWatch[] { new TableWatch("dbo.cable", "dbo.a524", "dbo.D524") };
-        var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
-        var logger = A.Fake<ILogger>();
+        var settings = new ValidatorSettings(DatabaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
 
         // We insert 10 rows as initial dataset
         var objectIds = Enumerable.Range(0, 10).ToList();
         objectIds.ForEach(async (x) => await InsertCableTable(x));
 
-        var sut = new InstanceSetLoader(logger, settings);
+        var sut = new InstanceSetLoader(settings);
         var initialLoadCh = sut.Start();
 
         var result = new List<DataEvent>();
@@ -58,17 +48,16 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     public async Task Receive_data_events_when_versions_table_row_is_updated()
     {
         // We cancel after 40 sec in case of timeouts.
-        var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        using var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var tableWatches = new TableWatch[] { new TableWatch("dbo.cable", "dbo.a524", "dbo.D524") };
-        var settings = new ValidatorSettings(_databaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
-        var logger = A.Fake<ILogger>();
+        var settings = new ValidatorSettings(DatabaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
 
-        var sut = new ChangeSetListener(logger, settings);
+        var sut = new ChangeSetListener(settings);
         var stateIdUpdatedCh = sut.Start(cTokenSource.Token);
 
         // We do this after starting 'sut.Listen' because
         // the updates are only retrieved after the listener has been started.
-        _ = Task.Factory.StartNew(async () =>
+        _ = Task.Run(async () =>
         {
             // 1. Insert
             var stateId = 1;
@@ -158,46 +147,46 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
             );
     }
 
-    private async Task InsertCableTable(int objectId)
+    private static async Task InsertCableTable(int objectId)
     {
         var sql = @"
             INSERT INTO [dbo].[cable] ([OBJECTID])
             VALUES(@object_id)";
 
-        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        using var connection = new SqlConnection(DatabaseFixture.ConnectionString);
         await connection.OpenAsync();
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private async Task UpdateVersionStateId(int stateId)
+    private static async Task UpdateVersionStateId(int stateId)
     {
         var sql = @"
             UPDATE [sde].[SDE_versions]
             SET [state_id] = @state_id
             WHERE [version_id] = 1";
 
-        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        using var connection = new SqlConnection(DatabaseFixture.ConnectionString);
         await connection.OpenAsync();
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@state_id", stateId);
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private async Task Update524(int objectId, int stateId)
+    private static async Task Update524(int objectId, int stateId)
     {
         await Insert524(objectId, stateId);
         await Delete524(objectId, stateId);
     }
 
-    private async Task Insert524(int objectId, int stateId)
+    private static async Task Insert524(int objectId, int stateId)
     {
         var sql = @"
             INSERT INTO [dbo].[a524] ([OBJECTID], [SDE_STATE_ID])
             VALUES(@object_id, @state_id)";
 
-        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        using var connection = new SqlConnection(DatabaseFixture.ConnectionString);
         await connection.OpenAsync();
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
@@ -205,13 +194,13 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private async Task Delete524(int objectId, int stateId)
+    private static async Task Delete524(int objectId, int stateId)
     {
         var sql = @"
             INSERT INTO [dbo].[D524] ([SDE_DELETES_ROW_ID], [SDE_STATE_ID], [DELETED_AT])
             VALUES(@object_id, 0, @state_id)";
 
-        using var connection = new SqlConnection(_databaseFixture.ConnectionString);
+        using var connection = new SqlConnection(DatabaseFixture.ConnectionString);
         await connection.OpenAsync();
         using var cmd = new SqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@object_id", objectId);
