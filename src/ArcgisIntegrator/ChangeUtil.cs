@@ -1,6 +1,6 @@
+using ArcgisIntegrator.Config;
 using System;
 using System.Collections.Generic;
-using ArcgisIntegrator.Config;
 
 namespace ArcgisIntegrator;
 

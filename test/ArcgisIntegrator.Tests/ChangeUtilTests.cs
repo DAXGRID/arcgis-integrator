@@ -1,6 +1,6 @@
-using System.Collections.Generic;
-using FluentAssertions;
 using ArcgisIntegrator.Config;
+using FluentAssertions;
+using System.Collections.Generic;
 using Xunit;
 
 namespace ArcgisIntegrator.Tests;

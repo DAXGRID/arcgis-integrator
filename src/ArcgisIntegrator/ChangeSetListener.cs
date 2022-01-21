@@ -1,14 +1,14 @@
+using ArcgisIntegrator.Config;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using MsSqlCdc;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
-using MsSqlCdc;
-using Microsoft.Extensions.Logging;
-using ArcgisIntegrator.Config;
-using System.Numerics;
 
 namespace ArcgisIntegrator;
 
