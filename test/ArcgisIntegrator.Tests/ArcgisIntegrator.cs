@@ -1,15 +1,15 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
-using Xunit;
-using FluentAssertions;
-using FluentAssertions.Execution;
-using System.Linq;
-using System.Collections.Generic;
 using ArcgisIntegrator.Config;
 using FakeItEasy;
+using FluentAssertions;
+using FluentAssertions.Execution;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace ArcgisIntegrator.Tests;
 

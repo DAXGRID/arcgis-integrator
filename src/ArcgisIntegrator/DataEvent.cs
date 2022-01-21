@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using ArcgisIntegrator.Config;
+using System.Collections.Generic;
 
 namespace ArcgisIntegrator;
 
