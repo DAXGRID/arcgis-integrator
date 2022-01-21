@@ -9,12 +9,10 @@ namespace ArcgisIntegrator.Console;
 
 public class ArcgisIntegratorHost : IHostedService
 {
-    private ILogger<ArcgisIntegratorHost> _logger;
-    private Settings _settings;
+    private readonly ILogger<ArcgisIntegratorHost> _logger;
+    private readonly Settings _settings;
 
-    public ArcgisIntegratorHost(
-        ILogger<ArcgisIntegratorHost> logger,
-        IOptions<Settings> settings)
+    public ArcgisIntegratorHost(ILogger<ArcgisIntegratorHost> logger, IOptions<Settings> settings)
     {
         _logger = logger;
         _settings = settings.Value;
@@ -32,7 +30,7 @@ public class ArcgisIntegratorHost : IHostedService
         var settings = new ValidatorSettings(
             _settings.ConnectionString, _settings.VersionTableName, 1000, tableWatches);
 
-        Task.Factory.StartNew(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {
