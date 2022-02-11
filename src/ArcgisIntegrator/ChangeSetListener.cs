@@ -94,6 +94,7 @@ public class ChangeSetListener
 
                     var changes = (await Task.WhenAll(addedTask, deletedTask).ConfigureAwait(false))
                         .SelectMany(x => x)
+                        .Where(x => x.Fields.Count > 0)
                         .GroupBy(x => x.ObjectId)
                         .Select(x => new ArcgisChangeSet(
                                     x.FirstOrDefault(y => y.TableName == table.AddTable),
@@ -103,7 +104,8 @@ public class ChangeSetListener
                     changeEvents.AddRange(changes);
                 }
 
-                await changeEventCh.Writer.WriteAsync(changeEvents).ConfigureAwait(false);
+                if (changeEvents.Count > 0)
+                    await changeEventCh.Writer.WriteAsync(changeEvents).ConfigureAwait(false);
             }
 
             changeEventCh.Writer.Complete();

@@ -47,7 +47,7 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
     [Trait("Category", "Integration")]
     public async Task Receive_data_events_when_versions_table_row_is_updated()
     {
-        // We cancel after 40 sec in case of timeouts.
+        // We cancel after 20 sec in case of timeouts.
         using var cTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var tableWatches = new TableWatch[] { new TableWatch("dbo.cable", "dbo.a524", "dbo.D524") };
         var settings = new ValidatorSettings(DatabaseFixture.ConnectionString, "sde_SDE_versions", 1000, tableWatches);
@@ -80,8 +80,12 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
             await Insert524(30, stateId);
             await UpdateVersionStateId(stateId);
 
-            // 5. Insert, update and delete
-            stateId = 5;
+            // 5. Update version no changes to listening tables (should not result in event).
+            // Since we don't wawnt an empty iterator.
+            await UpdateVersionStateId(5);
+
+            // 6. Insert, update and delete
+            stateId = 6;
             await Insert524(40, stateId);
             await Update524(20, stateId);
             await Delete524(30, stateId);
@@ -135,13 +139,13 @@ public class ArcgisIntegratorTests : IClassFixture<DatabaseFixture>
                 {
                     var fifthChange = fifth.ToArray();
                     fifthChange[0].Operation.Should().Be(Operation.Create);
-                    fifthChange[0].StateId.Should().Be(5);
+                    fifthChange[0].StateId.Should().Be(6);
                     fifthChange[0].ObjectId.Should().Be(40);
                     fifthChange[1].Operation.Should().Be(Operation.Update);
-                    fifthChange[1].StateId.Should().Be(5);
+                    fifthChange[1].StateId.Should().Be(6);
                     fifthChange[1].ObjectId.Should().Be(20);
                     fifthChange[2].Operation.Should().Be(Operation.Delete);
-                    fifthChange[2].StateId.Should().Be(5);
+                    fifthChange[2].StateId.Should().Be(6);
                     fifthChange[2].ObjectId.Should().Be(30);
                 }
             );
