@@ -7,18 +7,20 @@ using System.Text.Json;
 
 namespace ArcgisIntegrator.Console;
 
-public class ArcgisIntegratorHost : IHostedService
+public class ArcgisIntegratorHost : BackgroundService
 {
     private readonly ILogger<ArcgisIntegratorHost> _logger;
     private readonly Settings _settings;
 
-    public ArcgisIntegratorHost(ILogger<ArcgisIntegratorHost> logger, IOptions<Settings> settings)
+    public ArcgisIntegratorHost(
+        ILogger<ArcgisIntegratorHost> logger,
+        IOptions<Settings> settings)
     {
         _logger = logger;
         _settings = settings.Value;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected async override Task ExecuteAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting kontant validator.");
 
@@ -30,36 +32,26 @@ public class ArcgisIntegratorHost : IHostedService
         var settings = new ValidatorSettings(
             _settings.ConnectionString, _settings.VersionTableName, 1000, tableWatches);
 
-        _ = Task.Run(async () =>
+        try
         {
-            try
+            _logger.LogInformation("Starting initial load.");
+            var instanceSetLoaderReaderCh = new InstanceSetLoader(settings).Start();
+            await foreach (var changeEvent in instanceSetLoaderReaderCh.ReadAllAsync(cancellationToken))
             {
-                _logger.LogInformation("Starting initial load.");
-                var instanceSetLoaderReaderCh = new InstanceSetLoader(settings).Start();
-                await foreach (var changeEvent in instanceSetLoaderReaderCh.ReadAllAsync())
-                {
-                    _logger.LogInformation(JsonSerializer.Serialize(changeEvent));
-                }
-
-                _logger.LogInformation("Starting listening for change events.");
-                var changeSetListenerCh = new ChangeSetListener(settings).Start(cancellationToken);
-                await foreach (var changeEvents in changeSetListenerCh.ReadAllAsync())
-                {
-                    _logger.LogInformation(JsonSerializer.Serialize(changeEvents));
-                }
+                _logger.LogInformation(JsonSerializer.Serialize(changeEvent));
             }
-            catch (Exception ex)
+
+            _logger.LogInformation("Starting listening for change events.");
+            var changeSetListenerCh = new ChangeSetListener(settings).Start(cancellationToken);
+            await foreach (var changeEvents in changeSetListenerCh.ReadAllAsync(cancellationToken))
             {
-                _logger.LogError(ex.Message);
-                throw;
+                _logger.LogInformation(JsonSerializer.Serialize(changeEvents));
             }
-        }, cancellationToken);
-
-        return Task.CompletedTask;
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
     }
 }
