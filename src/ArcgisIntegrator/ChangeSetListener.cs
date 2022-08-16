@@ -45,12 +45,12 @@ public class ChangeSetListener
                     using var connection = new SqlConnection(_settings.ConnectionString);
                     await connection.OpenAsync().ConfigureAwait(false);
 
-                    var highBoundLsn = await Cdc.GetMaxLsn(connection).ConfigureAwait(false);
+                    var highBoundLsn = await Cdc.GetMaxLsnAsync(connection).ConfigureAwait(false);
 
                     // If the highbound lsn has changed there might be a change to the table.
                     if (lowBoundLsn <= highBoundLsn)
                     {
-                        var changes = await Cdc.GetAllChanges(
+                        var changes = await Cdc.GetAllChangesAsync(
                             connection,
                             _settings.VersionTableName,
                             lowBoundLsn,
@@ -60,7 +60,7 @@ public class ChangeSetListener
                         foreach (var change in changes.OrderBy(x => x.SequenceValue))
                             await versionChangeCh.Writer.WriteAsync(change).ConfigureAwait(false);
 
-                        lowBoundLsn = await Cdc.GetNextLsn(connection, highBoundLsn).ConfigureAwait(false);
+                        lowBoundLsn = await Cdc.GetNextLsnAsync(connection, highBoundLsn).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -182,7 +182,7 @@ public class ChangeSetListener
     {
         using var connection = new SqlConnection(_settings.ConnectionString);
         await connection.OpenAsync().ConfigureAwait(false);
-        var currentMaxLsn = await Cdc.GetMaxLsn(connection).ConfigureAwait(false);
-        return await Cdc.GetNextLsn(connection, currentMaxLsn).ConfigureAwait(false);
+        var currentMaxLsn = await Cdc.GetMaxLsnAsync(connection).ConfigureAwait(false);
+        return await Cdc.GetNextLsnAsync(connection, currentMaxLsn).ConfigureAwait(false);
     }
 }
